@@ -1,0 +1,7 @@
+ipdb
+h5py
+patool
+numpy
+scikit_image==0.14.0
+torch==1.1.0
+torchvision==0.2.2
