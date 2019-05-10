@@ -17,6 +17,7 @@ if config.USE_GPU:
 def train_model(model, train_loader):
 	model.train()
 	optimizer = optim.SGD(model.parameters(), lr=config.LEARNING_RATE)
+	overall_iter = 0
 
 	for epoch in range(config.NUM_EPOCHS):
 		for batch_idx, sample in enumerate(train_loader):
@@ -30,8 +31,9 @@ def train_model(model, train_loader):
 			if batch_idx % 500 == 0:
 				print(f'Train Epoch: {epoch} [{batch_idx}]\tLoss: {loss.item():.6f}')
 
-		if epoch % 10 == 0:
-			torch.save(model.state_dict(), os.path.join(config.LOG_PATH, config.NAME))
+			overall_iter += 1
+			if overall_iter % config.SAVE_ITER_FREQ == 0:
+				torch.save(model.state_dict(), os.path.join(config.LOG_PATH, config.NAME))
 
 def eval_model(model, eval_loader, eval_set, pretrained=False):
 	if pretrained:

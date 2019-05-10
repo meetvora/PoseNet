@@ -1,5 +1,6 @@
 import torch
 import models
+import os
 
 # Global parameters
 USE_GPU = True
@@ -17,10 +18,8 @@ LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
 
 # Path
-# LOG_PATH = "./log/example/"
-# DATA_PATH = "/cluster/project/infk/hilliges/lectures/mp19/project2/"
-LOG_PATH = "/home/spyd3/code/mp/skeleton/torch/log/"
-DATA_PATH = "/home/spyd3/code/mp/skeleton"
+LOG_PATH = "log/"
+DATA_PATH = None
 
 SUBMISSION_FILES = [
     "data.py",
@@ -28,3 +27,6 @@ SUBMISSION_FILES = [
     "utils.py",
     "config.py"
 ]
+
+if not os.path.isdir(LOG_PATH):
+	os.mkdir(LOG_PATH)
