@@ -107,3 +107,4 @@ venv.bak/
 log/
 *.zip
 *.csv.gz
+lsf*
