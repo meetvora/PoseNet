@@ -4,8 +4,8 @@ import patoolib
 import config
 
 def compute_MPJPE(p3d_out, p3d_gt, p3d_std):
-	p3d_out_17x3 = np.reshape(p3d_out, [-1, 17, 3])
-	p3d_gt_17x3 = np.reshape(p3d_gt, [-1, 17, 3])
+	p3d_out_17x3 = np.reshape(p3d_out.cpu().numpy(), [-1, 17, 3])
+	p3d_gt_17x3 = np.reshape(p3d_gt.cpu().numpy(), [-1, 17, 3])
 
 	mse = np.square((p3d_out_17x3 - p3d_gt_17x3) * p3d_std).sum(axis=2)
 	return np.mean(np.sqrt(mse))

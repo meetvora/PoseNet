@@ -1,3 +1,4 @@
+import ipdb
 import torch
 import numpy as np
 import torch.nn as nn
@@ -5,12 +6,11 @@ import torch.nn.functional as F
 
 def weight_init(l):
 	if isinstance(l, nn.Linear):
-		nn.init.kaiming_normal(l.weight)
-
+		nn.init.kaiming_normal_(l.weight)
 
 class MartinezLinear(nn.Module):
 	def __init__(self, lsize: int, dropout: float):
-		super(Martinez23Linear, self).__init__()
+		super(MartinezLinear, self).__init__()
 		self.lsize = lsize
 		self.dropout = nn.Dropout(dropout)
 		self.branch_1 = nn.Linear(self.lsize, self.lsize)
@@ -23,7 +23,6 @@ class MartinezLinear(nn.Module):
 		y = self.bn_1(y)
 		y = F.relu(y)
 		y = self.dropout(y)
-
 		y = self.branch_2(y)
 		y = self.bn_2(y)
 		y = F.relu(y)
@@ -33,15 +32,15 @@ class MartinezLinear(nn.Module):
 
 class MartinezModel(nn.Module):
 	def __init__(self, lsize=1024, nblocks=2, p=0.5, input_size=16*2, output_size=17*3):
-		super(Martinez23Model, self).__init__()
+		super(MartinezModel, self).__init__()
 		self.lsize = lsize
 		self.nblocks = nblocks
 		self.dropout = nn.Dropout(p)
 		self.input_size = input_size
 		self.output_size = output_size
-		self.l_1 = nn.Linear(self.input_size, self.input_size)
+		self.l_1 = nn.Linear(self.input_size, self.lsize)
 		self.bn_1 = nn.BatchNorm1d(self.lsize)
-		self.linear_blocks = nn.ModuleList([MartinezLinear(self.lsize, self.p) for _ in range(nblocks)])
+		self.linear_blocks = nn.ModuleList([MartinezLinear(self.lsize, p) for _ in range(nblocks)])
 		self.l_2 = nn.Linear(self.lsize, self.output_size)
 
 	def forward(self, x):
@@ -53,3 +52,15 @@ class MartinezModel(nn.Module):
 			y = self.linear_blocks[i](y)
 		y = self.l_2(y)
 		return y
+
+class CyclicalMartinez(nn.Module):
+	def __init__(self, lsize=1024, nblocks=2, p=0.5):
+		super(CyclicalMartinez, self).__init__()
+		self.inward = MartinezModel(lsize, nblocks, p)
+		self.outward = MartinezModel(lsize, nblocks, p, input_size=17*3, output_size=16*2)
+
+	def forward(self, x):
+		y3d = self.inward(x)
+		y2d = self.outward(y3d)
+
+		return (y3d, y2d)
