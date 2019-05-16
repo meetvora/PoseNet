@@ -7,8 +7,10 @@ def compute_MPJPE(p3d_out, p3d_gt, p3d_std):
 	p3d_out_17x3 = np.reshape(p3d_out.cpu().numpy(), [-1, 17, 3])
 	p3d_gt_17x3 = np.reshape(p3d_gt.cpu().numpy(), [-1, 17, 3])
 
-	mse = np.square((p3d_out_17x3 - p3d_gt_17x3) * p3d_std).sum(axis=2)
-	return np.mean(np.sqrt(mse))
+	diff = (p3d_out_17x3 - p3d_gt_17x3)
+	diff_std = diff * p3d_std
+	mse, mse_std = np.square(diff).sum(axis=2), np.square(diff_std).sum(axis=2)
+	return np.mean(np.sqrt(mse)), np.mean(np.sqrt(mse_std))
 
 def unnormalize_pose(p3d, p3d_mean, p3d_std):
 	b = p3d.shape[0]
@@ -41,3 +43,12 @@ def generate_submission(predictions, out_path):
 
 def create_zip_code_files(output_file):
 	patoolib.create_archive(output_file, config.SUBMISSION_FILES)
+
+def print_all_attr(module):
+	attr = [i for i in dir(module) if "__" not in i]
+	pairs = {k: getattr(module, k) for k in attr}
+	sep = "-"*90
+	print(f"{module.__name__}\n{sep}")
+	for at in attr:
+		print(f"{at} ==> {pairs[at]}")
+	print(sep)

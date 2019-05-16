@@ -6,17 +6,22 @@ import os
 USE_GPU = True
 NUM_SAMPLES= 312188
 DEMO = True
-NAME = "demo"
-MODEL = models.demo_model
+NAME = "cyclical"
+# MODEL = models.demo_model
 
 # Hyper parameters
 NUM_EPOCHS = 10
-BATCH_SIZE = 32
+BATCH_SIZE = 16
 WORKERS = 4
 DENOISE = True
 LEARNING_RATE = 0.001
+WEIGHT_DECAY = 1e-3
+NOISE_STD = 1e-5
 LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
+
+# a_0*loss_3d + a_1*loss_2d
+CYCLICAL_LOSS_COEFF = [1, 0]
 
 # Path
 LOG_PATH = "./log/example/"

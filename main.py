@@ -20,9 +20,8 @@ if config.USE_GPU:
 
 def train_model(model, train_loader):
 	model.train()
-	optimizer = optim.Adam(model.parameters(), lr=config.LEARNING_RATE, weight_decay=1e-3)
+	optimizer = optim.Adagrad(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
 	overall_iter = 0
-	noise = torch.from_numpy(np.random.normal(scale=1e-3, size=(config.BATCH_SIZE, 16*2)).astype(np.float32))
 
 	print("[+] Begin training.")
 	for epoch in range(config.NUM_EPOCHS):
@@ -31,15 +30,16 @@ def train_model(model, train_loader):
 			optimizer.zero_grad()
 			inp = pose2d
 			if config.DENOISE:
-				inp += noise
-			output3d, output2d = model(pose2d + noise)
-			loss = F.mse_loss(output3d, pose3d) + F.mse_loss(output2d, pose2d)
+				noise = torch.from_numpy(np.random.normal(scale=config.NOISE_STD, size=inp.shape).astype(np.float32))
+				inp += noise.cuda()
+			output3d, output2d = model(inp)
+			loss = config.CYCLICAL_LOSS_COEFF[0] * F.mse_loss(output3d, pose3d) + config.CYCLICAL_LOSS_COEFF[1] * F.mse_loss(output2d, pose2d)
 			loss.backward()
 			optimizer.step()
 
 			if batch_idx % 500 == 0:
-				mpjpe = compute_MPJPE(output3d.detach(), pose3d.detach(), train_loader.dataset.std.numpy())
-				print(f'Train Epoch: {epoch} [{batch_idx}]\tLoss: {loss.item():.6f}\tMPJPE: {mpjpe:.6f}')
+				mpjpe, mpjpe_std = compute_MPJPE(output3d.detach(), pose3d.detach(), train_loader.dataset.std.numpy())
+				print(f'Train Epoch: {epoch} [{batch_idx}]\tLoss: {loss.item():.6f}\tMPJPE: {mpjpe:.6f}\tMPJPE[STD]: {mpjpe_std:.6f}')
 
 			overall_iter += 1
 			if overall_iter % config.SAVE_ITER_FREQ == 0:
@@ -72,6 +72,8 @@ def main():
 	eval_loader = DataLoader(eval_set, batch_size=config.BATCH_SIZE, num_workers=config.WORKERS)
 	model = models.lifting.CyclicalMartinez()
 	model.apply(models.lifting.weight_init)
+
+	print_all_attr(config)
 
 	train_model(model, train_loader)
 	eval_model(model, eval_loader, eval_set)
