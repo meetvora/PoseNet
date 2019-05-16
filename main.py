@@ -20,18 +20,16 @@ if config.USE_GPU:
 
 def train_model(model, train_loader):
 	model.train()
-	optimizer = optim.Adagrad(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
+	optimizer = getattr(optim, config.OPTIMIZER)(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
 	overall_iter = 0
 
-	print("[+] Begin training.")
+	print("[+] Starting training.")
 	for epoch in range(config.NUM_EPOCHS):
 		for batch_idx, sample in enumerate(train_loader):
 			pose2d, pose3d = sample['pose2d'].cuda(), sample['pose3d'].cuda()
 			optimizer.zero_grad()
-			inp = pose2d
-			if config.DENOISE:
-				noise = torch.from_numpy(np.random.normal(scale=config.NOISE_STD, size=inp.shape).astype(np.float32))
-				inp += noise.cuda()
+			noise = torch.from_numpy(np.random.normal(scale=config.NOISE_STD, size=inp.shape).astype(np.float32))
+			inp = pose2d + noise.cuda()
 			output3d, output2d = model(inp)
 			loss = config.CYCLICAL_LOSS_COEFF[0] * F.mse_loss(output3d, pose3d) + config.CYCLICAL_LOSS_COEFF[1] * F.mse_loss(output2d, pose2d)
 			loss.backward()
@@ -49,7 +47,7 @@ def eval_model(model, eval_loader, pretrained=False):
 	if pretrained:
 		model.load_state_dict(os.path.join(config.LOG_PATH, config.NAME))
 
-	print("[+] Begin evaluation.")
+	print("[+] Starting evaluation.")
 	with torch.no_grad():
 		model.eval()
 		prediction = list()

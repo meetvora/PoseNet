@@ -16,12 +16,16 @@ WORKERS = 4
 DENOISE = True
 LEARNING_RATE = 0.001
 WEIGHT_DECAY = 1e-3
-NOISE_STD = 1e-5
+NOISE_STD = 1e-5 # Set to 0 to disable noising
 LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
 
 # a_0*loss_3d + a_1*loss_2d
-CYCLICAL_LOSS_COEFF = [1, 0]
+CYCLICAL_LOSS_COEFF = [1, 0.01]
+
+# Optimizer 
+# Possible amongst ['ASGD', 'Adadelta', 'Adagrad', 'Adam', 'Adamax', 'LBFGS', 'RMSprop', 'Rprop', 'SGD', 'SparseAdam']
+OPTIMIZER = "Adam"
 
 # Path
 LOG_PATH = "./log/example/"
