@@ -1,20 +1,19 @@
 import torch
 import models
 import os
+import subprocess
 
 # Global parameters
 USE_GPU = True
 NUM_SAMPLES= 312188
 DEMO = True
-NAME = "cyclical"
 # MODEL = models.demo_model
 
 # Hyper parameters
 NUM_EPOCHS = 10
 BATCH_SIZE = 16
 WORKERS = 4
-DENOISE = True
-LEARNING_RATE = 0.001
+LEARNING_RATE = 0.0001
 WEIGHT_DECAY = 1e-3
 NOISE_STD = 1e-5 # Set to 0 to disable noising
 LOG_ITER_FREQ = 10
@@ -25,10 +24,10 @@ CYCLICAL_LOSS_COEFF = [1, 0.01]
 
 # Optimizer 
 # Possible amongst ['ASGD', 'Adadelta', 'Adagrad', 'Adam', 'Adamax', 'LBFGS', 'RMSprop', 'Rprop', 'SGD', 'SparseAdam']
-OPTIMIZER = "Adam"
+OPTIMIZER = "Adadelta"
 
 # Path
-LOG_PATH = "./log/example/"
+LOG_PATH = "./log/"
 DATA_PATH = "/cluster/project/infk/hilliges/lectures/mp19/project2/"
 
 SUBMISSION_FILES = [
@@ -40,3 +39,6 @@ SUBMISSION_FILES = [
 
 if not os.path.isdir(LOG_PATH):
 	os.mkdir(LOG_PATH)
+
+BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip()
+NAME = "%s-%s-%s-%s" % (BRANCH, OPTIMIZER, LEARNING_RATE, BATCH_SIZE)

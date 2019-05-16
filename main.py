@@ -28,7 +28,7 @@ def train_model(model, train_loader):
 		for batch_idx, sample in enumerate(train_loader):
 			pose2d, pose3d = sample['pose2d'].cuda(), sample['pose3d'].cuda()
 			optimizer.zero_grad()
-			noise = torch.from_numpy(np.random.normal(scale=config.NOISE_STD, size=inp.shape).astype(np.float32))
+			noise = torch.from_numpy(np.random.normal(scale=config.NOISE_STD, size=pose2d.shape).astype(np.float32))
 			inp = pose2d + noise.cuda()
 			output3d, output2d = model(inp)
 			loss = config.CYCLICAL_LOSS_COEFF[0] * F.mse_loss(output3d, pose3d) + config.CYCLICAL_LOSS_COEFF[1] * F.mse_loss(output2d, pose2d)

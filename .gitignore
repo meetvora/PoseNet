@@ -108,3 +108,4 @@ log/
 *.zip
 *.csv.gz
 lsf*
+*/weights/
