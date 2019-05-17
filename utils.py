@@ -15,9 +15,7 @@ def compute_MPJPE(p3d_out, p3d_gt, p3d_std):
 def unnormalize_pose(p3d, p3d_mean, p3d_std):
 	b = p3d.shape[0]
 	if config.USE_GPU:
-		p3d = p3d.cuda()
-		p3d_mean = p3d_mean.cuda()
-		p3d_std = p3d_std.cuda()
+		p3d, p3d_mean, p3d_std = to_cuda(p3d, p3d_mean, p3d_std)
 
 	p3d_17x3 = torch.reshape(p3d, [-1, 17, 3])
 	root_joint = p3d_17x3[:, 0, :]
@@ -56,3 +54,5 @@ def print_all_attr(module):
 	for at in attr:
 		print(f"{at} ==> {pairs[at]}")
 	print(sep)
+
+to_cuda = lambda u: map(lambda x: x.cuda(), u)

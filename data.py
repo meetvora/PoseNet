@@ -7,6 +7,8 @@ from skimage import io
 from torch.utils.data import Dataset
 from torchvision import transforms
 
+from config import USE_GPU
+
 class DataSet(Dataset):
 	def __init__(self, root_dir, image_transforms=None, mode="train", normalize=True, num_joints=17):
 		self.root_dir = root_dir
@@ -35,7 +37,9 @@ class DataSet(Dataset):
 	def __getitem__(self, idx):
 		image = io.imread(self.file_paths[idx]).astype(np.float32)
 		image = np.moveaxis(image / 128.0 - 1, 2, 0)
-		image = torch.from_numpy(image).cuda()
+		image = torch.from_numpy(image)
+		if USE_GPU:
+			image = image.cuda()
 		if self.image_transforms:
 			image = self.image_transforms(image)
 		

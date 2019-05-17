@@ -27,7 +27,9 @@ def train_model(model, train_loader):
 	print("[+] Starting training.")
 	for epoch in range(config.NUM_EPOCHS):
 		for batch_idx, sample in enumerate(train_loader):
-			image, pose2d, pose3d = sample['image'].cuda(), sample['pose2d'].cuda(), sample['pose3d'].cuda()
+			image, pose2d, pose3d = sample['image'], sample['pose2d'], sample['pose3d']
+			if config.USE_GPU:
+				image, pose2d, pose3d = to_cuda(image, pose2d, pose3d)
 			optimizer.zero_grad()
 			# noise = torch.from_numpy(np.random.normal(scale=config.NOISE_STD, size=pose2d.shape).astype(np.float32))
 			# inp = pose2d + noise

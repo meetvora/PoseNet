@@ -4,7 +4,7 @@ import os
 import subprocess
 
 # Global parameters
-USE_GPU = True
+USE_GPU = False
 NUM_SAMPLES= 312188
 DEMO = True
 # MODEL = models.demo_model
