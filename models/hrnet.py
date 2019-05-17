@@ -10,10 +10,12 @@ from __future__ import print_function
 
 import os
 import logging
+import ipdb
 
 import torch
 import torch.nn as nn
 
+from models.lifting import *
 
 BN_MOMENTUM = 0.1
 logger = logging.getLogger(__name__)
@@ -458,7 +460,7 @@ class PoseHighResolutionNet(nn.Module):
 
         return x
 
-    def init_weights(self, pretrained=''):
+    def init_weights(self, pretrained='', device=True):
         logger.info('=> init weights from normal distribution')
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -498,3 +500,28 @@ def get_pose_net(cfg, is_train, **kwargs):
         model.init_weights(cfg.MODEL.PRETRAINED)
 
     return model
+
+
+class PoseHighResolution3D(nn.Module):
+    def __init__(self, cfg, use_gpu):
+        super(PoseHighResolution3D, self).__init__()
+        self.twoDNet = PoseHighResolutionNet(cfg)
+        self.twoDNet.init_weights(cfg.PRETRAINED, use_gpu)
+        for param in self.twoDNet.parameters():
+            param.requires_grad = False
+        self.liftNet = CyclicalMartinez(cfg)
+
+    def map_to_coord(self, maps): # Recheck
+        """
+        args: x - heatmaps of shape (BATCH_SIZE, 16, 64, 64)
+        return: np.array of shape (BATCH_SIZE, 32)
+        """
+        _, idx = torch.max(maps.flatten(2), 2)
+        x, y = (idx % 64)*4, idx / 16 # Rescaling to (256, 256)
+        return torch.cat((x, y), 1).float()
+
+    def forward(self, x):
+        twoDMaps = self.twoDNet(x)
+        twoDCoords = self.map_to_coord(twoDMaps)
+        liftOut = self.liftNet(twoDCoords)
+        return {'hrnet_coord': twoDCoords, 'cycl_martinez': liftOut, 'hrnet_maps': twoDMaps}

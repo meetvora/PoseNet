@@ -1,4 +1,17 @@
-PRETRAINED = '/cluster/home/voram/mp/PoseNet/models/weights/hrnet_w32-36af842e.pth'
+# Martinez Parameters
+TWOD = {
+	'LINEAR_SIZE': 1024,
+	'NUM_BLOCKS': 2,
+	'p': 0.5,
+}
+THREED = {
+	'LINEAR_SIZE': 1024,
+	'NUM_BLOCKS': 2,
+	'p': 0.5,
+}
+
+# HRNet Parameters
+PRETRAINED = '/cluster/home/voram/mp/PoseNet/models/weights/pose_hrnet_w32_256x256.pth'
 TARGET_TYPE = 'gaussian'
 INIT_WEIGHTS = True
 IMAGE_SIZE = [256, 256]

@@ -54,13 +54,13 @@ class MartinezModel(nn.Module):
 		return y
 
 class CyclicalMartinez(nn.Module):
-	def __init__(self, lsize_in=1024, nblocks_in=2, p_in=0.5, lsize_out=1024, nblocks_out=2, p_out=0.5):
+	def __init__(self, cfg):
 		super(CyclicalMartinez, self).__init__()
-		self.inward = MartinezModel(lsize_in, nblocks_in, p_in)
-		self.outward = MartinezModel(lsize_out, nblocks_out, p_out, input_size=17*3, output_size=16*2)
+		self.inward = MartinezModel(cfg.TWOD['LINEAR_SIZE'], cfg.TWOD['NUM_BLOCKS'], cfg.TWOD['p'])
+		self.outward = MartinezModel(cfg.THREED['LINEAR_SIZE'], cfg.THREED['NUM_BLOCKS'], cfg.THREED['p'], input_size=17*3, output_size=16*2)
 
 	def forward(self, x):
 		y3d = self.inward(x)
 		y2d = self.outward(y3d)
 
-		return (y3d, y2d)
+		return {'pose_3d': y3d, 'pose_2d': y2d}
