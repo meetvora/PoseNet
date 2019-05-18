@@ -29,13 +29,13 @@ def train_model(model, train_loader):
 		for batch_idx, sample in enumerate(train_loader):
 			image, pose2d, pose3d = sample['image'], sample['pose2d'], sample['pose3d']
 			if config.USE_GPU:
-				image, pose2d, pose3d = to_cuda(image, pose2d, pose3d)
+				image, pose2d, pose3d = to_cuda([image, pose2d, pose3d])
 			optimizer.zero_grad()
 			# noise = torch.from_numpy(np.random.normal(scale=config.NOISE_STD, size=pose2d.shape).astype(np.float32))
 			# inp = pose2d + noise
 			output = model(image)
 			loss = config.CYCLICAL_LOSS_COEFF[0] * F.mse_loss(output['cycl_martinez']['pose_3d'], pose3d) \
-					+ config.CYCLICAL_LOSS_COEFF[1] * F.mse_loss(output['cycl_martinez']['pose_2d'], pose2d)
+					+ config.CYCLICAL_LOSS_COEFF[1] * F.mse_loss(output['cycl_martinez']['pose_2d'], output['hrnet_coord'])
 			loss.backward()
 			optimizer.step()
 

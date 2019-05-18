@@ -15,7 +15,7 @@ def compute_MPJPE(p3d_out, p3d_gt, p3d_std):
 def unnormalize_pose(p3d, p3d_mean, p3d_std):
 	b = p3d.shape[0]
 	if config.USE_GPU:
-		p3d, p3d_mean, p3d_std = to_cuda(p3d, p3d_mean, p3d_std)
+		p3d, p3d_mean, p3d_std = to_cuda([p3d, p3d_mean, p3d_std])
 
 	p3d_17x3 = torch.reshape(p3d, [-1, 17, 3])
 	root_joint = p3d_17x3[:, 0, :]

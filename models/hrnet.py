@@ -517,10 +517,11 @@ class PoseHighResolution3D(nn.Module):
     def map_to_coord(self, maps): # Recheck
         """
         args: x - heatmaps of shape (BATCH_SIZE, 16, 64, 64)
-        return: np.array of shape (BATCH_SIZE, 32)
+        return: tensor of shape (BATCH_SIZE, 32)
         """
         _, idx = torch.max(maps.flatten(2), 2)
-        x, y = (idx % 64)*4, idx / 16 # Rescaling to (256, 256)
+        x, y = (idx % 64)*4 + 2, idx / 16  + 2 # Rescaling to (256, 256)
+        x, y = y, x
         return torch.cat((x, y), 1).float()
 
     def forward(self, x):
