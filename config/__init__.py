@@ -6,15 +6,13 @@ import subprocess
 # Global parameters
 USE_GPU = False
 NUM_SAMPLES= 312188
-DEMO = True
-# MODEL = models.demo_model
 
 # Hyper parameters
 NUM_EPOCHS = 5
-BATCH_SIZE = 32
+BATCH_SIZE = 3
 WORKERS = 0
 LEARNING_RATE = 0.001
-WEIGHT_DECAY = 1e-3
+WEIGHT_DECAY = 0
 NOISE_STD = 1e-5 # Set to 0 to disable noising
 LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000

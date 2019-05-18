@@ -506,6 +506,11 @@ def get_pose_net(cfg, is_train, **kwargs):
 
 
 class PoseHighResolution3D(nn.Module):
+    """
+    The final supremo model that consists of two sub-models:
+        twoDNet: Pose HighResolution Net, proposed by Sun et al.
+        liftNet: A 2D to 3D regressor, proposed by Martinez et al.
+    """
     def __init__(self, cfg, use_gpu):
         super(PoseHighResolution3D, self).__init__()
         self.twoDNet = PoseHighResolutionNet(cfg)
@@ -514,15 +519,19 @@ class PoseHighResolution3D(nn.Module):
             param.requires_grad = False
         self.liftNet = CyclicalMartinez(cfg)
 
-    def map_to_coord(self, maps): # Recheck
+    def map_to_coord(self, maps):
         """
-        args: x - heatmaps of shape (BATCH_SIZE, 16, 64, 64)
-        return: tensor of shape (BATCH_SIZE, 32)
+        Converts 2D Heatmaps to coordinates.
+        (NOTE: Recheck the mapping function and rescaling heuristic.)
+        Arguments: 
+            maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, 16, 64, 64)
+        Returns: 
+            z (torch.Tensor): Coordinates of shape (BATCH_SIZE, 32)
         """
         _, idx = torch.max(maps.flatten(2), 2)
         x, y = (idx % 64)*4 + 2, idx / 16  + 2 # Rescaling to (256, 256)
-        x, y = y, x
-        return torch.cat((x, y), 1).float()
+        z = torch.cat((x, y), 1).float()
+        return z
 
     def forward(self, x):
         twoDMaps = self.twoDNet(x)

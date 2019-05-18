@@ -54,6 +54,7 @@ class MartinezModel(nn.Module):
 		return y
 
 class CyclicalMartinez(nn.Module):
+	""" A proposed model that re-projects 3D coordinates to 2D plane"""
 	def __init__(self, cfg):
 		super(CyclicalMartinez, self).__init__()
 		self.inward = MartinezModel(cfg.TWOD['LINEAR_SIZE'], cfg.TWOD['NUM_BLOCKS'], cfg.TWOD['p'])

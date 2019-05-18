@@ -1,6 +1,6 @@
 import os
 import ipdb
-
+import logging
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -13,18 +13,22 @@ import models
 import models.hrnet
 import config
 import config.hrnet
-from data import DataSet, LiftingDataSet, reduce_joints_to_16
+from data import DataSet
 from utils import *
 
 if config.USE_GPU:
 	torch.set_default_tensor_type('torch.cuda.FloatTensor')
+
+logFormatter = "%(levelname)s: %(message)s"
+logging.basicConfig(format=logFormatter, level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 def train_model(model, train_loader):
 	model.train()
 	optimizer = getattr(optim, config.OPTIMIZER)(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
 	overall_iter = 0
 
-	print("[+] Starting training.")
+	logger.info("[+] Starting training.")
 	for epoch in range(config.NUM_EPOCHS):
 		for batch_idx, sample in enumerate(train_loader):
 			image, pose2d, pose3d = sample['image'], sample['pose2d'], sample['pose3d']
@@ -42,7 +46,7 @@ def train_model(model, train_loader):
 			if batch_idx % 1 == 0:
 				mpjpe, mpjpe_std = compute_MPJPE(output['cycl_martinez']['pose_3d'].detach(), pose3d.detach(), train_loader.dataset.std.numpy())
 				hrnet_loss = F.mse_loss(output['hrnet_coord'], pose2d)
-				print(f'Train Epoch: {epoch} [{batch_idx}]\tLoss: {loss.item():.6f}\tMPJPE: {mpjpe:.6f}\tMPJPE[STD]: {mpjpe_std:.6f}\tHRNet Loss: {hrnet_loss}')
+				logger.debug(f'Train Epoch: {epoch} [{batch_idx}]\tLoss: {loss.item():.6f}\tMPJPE: {mpjpe:.6f}\tMPJPE[STD]: {mpjpe_std:.6f}\tHRNet Loss: {hrnet_loss}')
 
 			overall_iter += 1
 			if overall_iter % config.SAVE_ITER_FREQ == 0:
@@ -52,7 +56,7 @@ def eval_model(model, eval_loader, pretrained=False):
 	if pretrained:
 		model.load_state_dict(torch.load(os.path.join(config.LOG_PATH, config.NAME)))
 
-	print("[+] Starting evaluation.")
+	logger.info("[+] Starting evaluation.")
 	with torch.no_grad():
 		model.eval()
 		prediction = list()
@@ -82,7 +86,7 @@ def main():
 	print_all_attr(config)
 
 	train_model(model, train_loader)
-	eval_model(model, eval_loader, pretrained=True)
+	eval_model(model, eval_loader, pretrained=False)
 
 if __name__ == '__main__':
 	main()
