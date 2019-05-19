@@ -1,0 +1,123 @@
+import ipdb
+import torch
+import numpy as np
+import torch.nn as nn
+import torch.nn.functional as F
+
+from models.lifting import *
+from models.hrnet import *
+
+class CyclicalMartinez(nn.Module):
+	"""
+	Inspired by Martinez et al.
+	Regresses from 2D to 3D and back to 2D.
+	Input: Batch of coordinates
+	Output: Batch of 2D and 3D coorindates.
+	"""
+	def __init__(self, cfg):
+		super(CyclicalMartinez, self).__init__()
+		self.inward = MartinezModel(cfg.TWOD['LINEAR_SIZE'], cfg.TWOD['NUM_BLOCKS'], cfg.TWOD['p'], \
+			input_size=cfg.TWOD['IN_SIZE'], output_size=cfg.TWOD['OUT_SIZE'])
+		self.outward = MartinezModel(cfg.THREED['LINEAR_SIZE'], cfg.THREED['NUM_BLOCKS'], cfg.THREED['p'], \
+			input_size=cfg.THREED['IN_SIZE'], output_size=cfg.THREED['OUT_SIZE'])
+
+	def forward(self, x):
+		y3d = self.inward(x)
+		y2d = self.outward(y3d)
+		return {'pose_3d': y3d, 'pose_2d': y2d}
+
+
+def map_to_coord(self, maps):
+		"""
+		Converts 2D Heatmaps to coordinates.
+		(NOTE: Recheck the mapping function and rescaling heuristic.)
+		Arguments:
+		    maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joins, 64, 64)
+		Returns: 
+		    z (torch.Tensor): Coordinates of shape (BATCH_SIZE, num_joints*2)
+		"""
+		_, idx = torch.max(maps.flatten(2), 2)
+		x, y = (idx % 64)*4 + 2, idx / 16  + 2 # Rescaling to (256, 256)
+		z = torch.cat((x, y), 1).float()
+		return z
+
+
+class PoseHighResolution3D(nn.Module):
+	"""
+	An intermediate model that consists of two sub-models:
+		twoDNet:
+			Pose HighResolution Net, proposed by Sun et al.
+			Frozen and uses publicly available pretrained weights.
+			Outputs: heatmap of shape (BATCH_SIZE, 16, 64, 64)
+		liftNet:
+			A 2D to 3D regressor and back to 2D.
+			Basic block inspired by Martinez et al.
+			Uses `map_to_coord` to convert heatmaps to 2D coordinates.
+			Outputs: 3D coordinates and reprojected 2D coordinates. 
+	(NOTE: Usually, only liftNet is trained with twoDNet frozen.)
+	Input: Batch of images
+	Output: 2D heatmaps, 2D coords by twoDNet, 3D and 2D coords by liftNet.
+	"""
+	def __init__(self, cfg, use_gpu):
+		super(PoseHighResolution3D, self).__init__()
+		self.twoDNet = PoseHighResolutionNet(cfg)
+		self.twoDNet.init_weights(cfg.PRETRAINED, use_gpu)
+		for param in self.twoDNet.parameters():
+		    param.requires_grad = False
+		self.liftNet = CyclicalMartinez(cfg)
+
+	def forward(self, x):
+		twoDMaps = self.twoDNet(x)
+		twoDCoords = self.map_to_coord(twoDMaps)
+		liftOut = self.liftNet(twoDCoords)
+		return {'hrnet_coord': twoDCoords, 'cycl_martinez': liftOut, 'hrnet_maps': twoDMaps}
+
+
+def softargmax(maps, beta: int = 15, dim: int = 64):
+	"""
+	Applies softargmax to heatmaps and returns 2D (x,y) coordinates
+	Arguments:
+		maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joint, dim, dim)
+		beta (int): Exponentiating constant. Default = 15
+		dim (int): Spatial dimension of map. Default = 64
+	Returns:
+		values (torch.Tensor): max value of heatmap; shape (BATCH_SIZE, num_joints)
+		regress_coord (torch.Tensor): (x, y) co-ordinates of shape (BATCH_SIZE, num_joints*2)
+	"""
+	batch_size, num_joints = maps.shape[0], maps.shape[1]
+	flat_map = maps.view(batch_size, num_joints, -1).float()
+	Softmax = nn.Softmax(dim=-1)
+	softmax = Softmax(flat_map * beta).float()
+	values = torch.sum(flat_map * softmax, -1)
+	posn = torch.arange(0, dim * dim)
+	idxs = torch.sum(softmax * posn.float(), -1)
+	x, y = idxs//dim, idxs%dim
+	regress_coord = torch.stack((x, y), 2)
+	regress_coord = regress_coord.flatten(1)
+	return values, regress_coord
+
+
+class PoseNet(nn.Module):
+	"""
+	The final supremo model that improves upon PoseHighResolution3D by applying
+	softargmax to heatmaps. 
+	NOTE:
+		We use new pretrained weights for twoDNet but train the entire model
+	in an end-to-end fashion.
+		Pass config.posenet during initialization
+	"""
+	def __init__(self, cfg):
+		super(PoseNet, self).__init__()
+		self.twoDNet = PoseHighResolutionNet(cfg)
+		# Update NUM_JOINTS in config.posenet to include new final_layer
+		# self.twoDNet.final_layer = nn.Conv2d(32, 17, kernel_size=(1, 1), stride=(1, 1))
+		self.twoDNet.init_weights(cfg.PRETRAINED, cfg.USE_GPU)
+		for param in self.twoDNet.parameters():
+			param.requires_grad = True
+		self.liftNet = CyclicalMartinez(cfg)
+
+	def forward(self, x):
+		twoDMaps = self.twoDNet(x)
+		_, twoDCoords = softargmax(twoDMaps)
+		liftOut = self.liftNet(twoDCoords)
+		return {'hrnet_coord': twoDCoords, 'cycl_martinez': liftOut, 'hrnet_maps': twoDMaps}

@@ -24,8 +24,8 @@ NOISE_STD = 1e-5 # Set to 0 to disable noising
 LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
 
-BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip()
-NAME = "%s-%s-%s-%s" % ("FINETUNE", BRANCH, OPTIMIZER, LEARNING_RATE)
+BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode("utf-8")
+NAME = "%s-%s-%s" % ("FINETUNE", BRANCH, OPTIMIZER)
 
 if not os.path.isdir(LOG_PATH):
 	os.mkdir(LOG_PATH)

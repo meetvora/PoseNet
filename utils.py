@@ -35,10 +35,9 @@ def compute_MPJPE(p3d_out, p3d_gt, p3d_std):
 	p3d_out_17x3 = np.reshape(p3d_out.cpu().numpy(), [-1, 17, 3])
 	p3d_gt_17x3 = np.reshape(p3d_gt.cpu().numpy(), [-1, 17, 3])
 
-	diff = (p3d_out_17x3 - p3d_gt_17x3)
-	diff_std = diff * p3d_std
-	mse, mse_std = np.square(diff).sum(axis=2), np.square(diff_std).sum(axis=2)
-	return np.mean(np.sqrt(mse)), np.mean(np.sqrt(mse_std))
+	diff_std = p3d_std * (p3d_out_17x3 - p3d_gt_17x3)
+	mse_std = np.square(diff_std).sum(axis=2)
+	return np.mean(np.sqrt(mse_std))
 
 def unnormalize_pose(p3d, p3d_mean, p3d_std):
 	b = p3d.shape[0]
@@ -75,7 +74,7 @@ def create_zip_code_files(output_file):
 	patoolib.create_archive(output_file, config.SUBMISSION_FILES)
 
 def print_all_attr(module):
-	attr = [i for i in dir(module) if "__" not in i]
+	attr = [i for i in dir(module) if ("__" not in i and i.upper() == i)]
 	pairs = {k: getattr(module, k) for k in attr}
 	sep = "-"*90
 	print(f"{module.__name__}\n{sep}")
@@ -84,3 +83,13 @@ def print_all_attr(module):
 	print(sep)
 
 to_cuda = lambda u: map(lambda x: x.cuda(), u)
+
+def print_termwise_loss(loss):
+	keys = loss.keys()
+	string = "\tTermwise:\t" + ("\t".join([f"{k.upper()}: {v:.6f}" for (k, v) in loss.items()]))
+	return string+"\n"
+
+if __name__ == '__main__':
+	logFormatter = "%(levelname)s: %(message)s"
+	logging.basicConfig(format=logFormatter, level=logging.DEBUG)
+	logger = logging.getLogger(__name__)

@@ -3,11 +3,15 @@ TWOD = {
 	'LINEAR_SIZE': 1024,
 	'NUM_BLOCKS': 2,
 	'p': 0.5,
+	'IN_SIZE': 16 * 2,
+	'OUT_SIZE': 17 * 3
 }
 THREED = {
 	'LINEAR_SIZE': 1024,
 	'NUM_BLOCKS': 2,
 	'p': 0.5,
+	'IN_SIZE': 17 * 3,
+	'OUT_SIZE': 16 * 2
 }
 
 # HRNet Parameters

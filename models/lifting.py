@@ -52,16 +52,3 @@ class MartinezModel(nn.Module):
 			y = self.linear_blocks[i](y)
 		y = self.l_2(y)
 		return y
-
-class CyclicalMartinez(nn.Module):
-	""" A proposed model that re-projects 3D coordinates to 2D plane"""
-	def __init__(self, cfg):
-		super(CyclicalMartinez, self).__init__()
-		self.inward = MartinezModel(cfg.TWOD['LINEAR_SIZE'], cfg.TWOD['NUM_BLOCKS'], cfg.TWOD['p'])
-		self.outward = MartinezModel(cfg.THREED['LINEAR_SIZE'], cfg.THREED['NUM_BLOCKS'], cfg.THREED['p'], input_size=17*3, output_size=16*2)
-
-	def forward(self, x):
-		y3d = self.inward(x)
-		y2d = self.outward(y3d)
-
-		return {'pose_3d': y3d, 'pose_2d': y2d}

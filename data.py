@@ -15,14 +15,14 @@ from torchvision import transforms
 from config.finetune import USE_GPU, GAUS_KERNEL, GAUS_STD
 
 class DataSet(Dataset):
-	def __init__(self, root_dir, image_transforms=None, mode="train", normalize=True, num_joints=17, heatmap2D=False):
+	def __init__(self, root_dir, image_transforms=None, mode="train", normalize=True, num_joints=17, heatmap2d=True):
 		self.root_dir = root_dir
 		self.train = mode.lower() == "train"
 		self.image_transforms = image_transforms
 		file_names = open(os.path.join(root_dir,"annot","%s_images.txt"%mode)).readlines()
 		self.file_paths = [os.path.join(root_dir, "images", path[:-1]) for path in file_names]
 		self.normalize = normalize
-		self.heatmap2D = heatmap2D
+		self.heatmap2d = heatmap2d
 
 		if self.train:
 			annotations_path = os.path.join(root_dir,"annot","train.h5")
@@ -35,7 +35,7 @@ class DataSet(Dataset):
 		self.mean = torch.from_numpy(np.loadtxt(os.path.join(root_dir,'annot',"mean.txt")).reshape([1, 17, 3]).astype(np.float32))
 		self.std = torch.from_numpy(np.loadtxt(os.path.join(root_dir,'annot',"std.txt")).reshape([1, 17, 3]).astype(np.float32))
 
-		if heatmap2D:
+		if heatmap2d:
 			self.gaussian_filter = GaussianSmoothing2D(num_joints, GAUS_KERNEL, GAUS_STD)
 
 	def __len__(self):
@@ -54,16 +54,15 @@ class DataSet(Dataset):
 			return image
 
 		target_3D = self.target3d[idx]
-		target_2D = self.target2d[idx]
 
 		if self.normalize:
 			target_3D = (target_3D - self.mean) / self.std
 
-		sample = {'image': image, 'pose3d': target_3D.flatten(), 'pose2d': target_2D.flatten()}
+		sample = {'image': image, 'pose3d': target_3D.flatten()}
 
-		if self.heatmap2D:
+		if self.heatmap2d:
 			heatmap = self.generate_2Dheatmaps(target_2D)
-			sample['heatmap2D'] = heatmap
+			sample['heatmap2d'] = heatmap
 
 		return sample
 
