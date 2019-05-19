@@ -8,8 +8,6 @@ GAUS_KERNEL = 3
 GAUS_STD = 2
 
 OPTIMIZER = "Adam"
-MOMENTUM = 0.9
-NESTEROV = False
 
 # Path
 LOG_PATH = "./log/finetune/"
@@ -25,7 +23,7 @@ LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
 
 BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode("utf-8")
-NAME = "%s-%s-%s" % ("FINETUNE", BRANCH, OPTIMIZER)
+NAME = "%s-%s-%s-%s" % ("FINETUNE", BRANCH, OPTIMIZER, NUM_EPOCHS)
 
 if not os.path.isdir(LOG_PATH):
 	os.mkdir(LOG_PATH)

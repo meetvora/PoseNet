@@ -54,11 +54,12 @@ class DataSet(Dataset):
 			return image
 
 		target_3D = self.target3d[idx]
+		target_2D = self.target2d[idx]
 
 		if self.normalize:
 			target_3D = (target_3D - self.mean) / self.std
 
-		sample = {'image': image, 'pose3d': target_3D.flatten()}
+		sample = {'image': image, 'pose3d': target_3D.flatten(), 'pose2d': target_2D.flatten()}
 
 		if self.heatmap2d:
 			heatmap = self.generate_2Dheatmaps(target_2D)

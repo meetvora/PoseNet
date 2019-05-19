@@ -22,6 +22,10 @@ from utils import *
 if config.finetune.USE_GPU:
 	torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
+logFormatter = "%(levelname)s: %(message)s"
+logging.basicConfig(format=logFormatter, level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 def get_new_HR2D():
 	""" 
 	Returns an instance of HRNet with new final Conv2d layer

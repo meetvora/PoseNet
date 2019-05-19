@@ -88,8 +88,3 @@ def print_termwise_loss(loss):
 	keys = loss.keys()
 	string = "\tTermwise:\t" + ("\t".join([f"{k.upper()}: {v:.6f}" for (k, v) in loss.items()]))
 	return string+"\n"
-
-if __name__ == '__main__':
-	logFormatter = "%(levelname)s: %(message)s"
-	logging.basicConfig(format=logFormatter, level=logging.DEBUG)
-	logger = logging.getLogger(__name__)
