@@ -2,6 +2,7 @@ import torch
 import numpy as np
 import patoolib
 import config
+import torch.nn as nn
 
 class JointsMSELoss(nn.Module):
 	"""A custom loss function developed to learn HRNet.

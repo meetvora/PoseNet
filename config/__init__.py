@@ -4,12 +4,12 @@ import os
 import subprocess
 
 # Global parameters
-USE_GPU = False
+USE_GPU = True
 NUM_SAMPLES= 312188
 
 # Hyper parameters
 NUM_EPOCHS = 5
-BATCH_SIZE = 3
+BATCH_SIZE = 32
 WORKERS = 0
 LEARNING_RATE = 0.001
 WEIGHT_DECAY = 0

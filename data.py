@@ -79,7 +79,8 @@ class DataSet(Dataset):
 		downscale = 256 / map_dim
 		maps = torch.zeros((num_joints, map_dim, map_dim))
 		x, y = joints[:, 0].long(), joints[:, 1].long()
-		maps[:, x/downscale+downscale/2, y/downscale+downscale/2] = 1
+		for i, (p, q) in enumerate(zip(x, y)):
+			maps[i, p/downscale, q/downscale] = 1
 		maps = self.gaussian_filter(maps)
 		return maps
 
