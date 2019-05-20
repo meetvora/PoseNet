@@ -1,15 +1,18 @@
 import os
 import subprocess
 import config
+import config.finetune
+import config.hrnet
 
 USE_GPU = config.USE_GPU
 OPTIMIZER = "Adam"
+FROZEN = True
 
 # Path
 LOG_PATH = "./log/posenet/"
 DATA_PATH = config.DATA_PATH
 
-NUM_EPOCHS = 1
+NUM_EPOCHS = 5
 BATCH_SIZE = 32
 WORKERS = 0
 LEARNING_RATE = 0.001
@@ -24,7 +27,7 @@ if not os.path.isdir(LOG_PATH):
 	os.mkdir(LOG_PATH)
 
 LOSS_COEFF = {
-	'hrnet_maps': 0.1,
+	'hrnet_maps': 0,
 	'cycl_martinez':{
 		'pose_3d': 1,
 		'pose_2d': 0
@@ -49,8 +52,8 @@ THREED = {
 
 # HRNet Parameters
 # Points to weights stored by scripts/finetuneHRN.py
-# PRETRAINED = '/cluster/home/voram/mp/PoseNet/log/finetune/FINETUNE-cyclical_martinez-Adam'
-PRETRAINED = os.path.join(config.finetune.LOG_PATH, config.finetune.NAME)
+PRETRAINED = '/cluster/home/voram/mp/PoseNet/log/finetune/FINETUNE-softargmax-Adam-5'
+#PRETRAINED = os.path.join(config.finetune.LOG_PATH, config.finetune.NAME)
 NUM_JOINTS = 17
 INIT_WEIGHTS = True
 TARGET_TYPE = config.hrnet.TARGET_TYPE

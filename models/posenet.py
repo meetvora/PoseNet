@@ -113,7 +113,10 @@ class PoseNet(nn.Module):
 		# self.twoDNet.final_layer = nn.Conv2d(32, 17, kernel_size=(1, 1), stride=(1, 1))
 		self.twoDNet.init_weights(cfg.PRETRAINED, cfg.USE_GPU)
 		for param in self.twoDNet.parameters():
-			param.requires_grad = True
+			param.requires_grad = not cfg.FROZEN
+		if cfg.FROZEN:
+			for param in self.twoDNet.final_layer.parameters():
+				param.requires_grad = True
 		self.liftNet = CyclicalMartinez(cfg)
 
 	def forward(self, x):
