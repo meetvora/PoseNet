@@ -37,18 +37,18 @@ class Argmax(nn.Module):
 		self.get_coordinates = self.softargmax if SOFTARGMAX else self.hardargmax
 
 	def hardargmax(self, maps):
-			"""
-			Converts 2D Heatmaps to coordinates.
-			(NOTE: Recheck the mapping function and rescaling heuristic.)
-			Arguments:
-			    maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joins, 64, 64)
-			Returns:
-			    z (torch.Tensor): Coordinates of shape (BATCH_SIZE, num_joints*2)
-			"""
-			_, idx = torch.max(maps.flatten(2), 2)
-			x, y = idx / 16  + 2, (idx % 64)*4 + 2 # Rescaling to (256, 256)
-			z = torch.stack((x, y), 2).flatten(1).float()
-			return z
+		"""
+		Converts 2D Heatmaps to coordinates.
+		(NOTE: Recheck the mapping function and rescaling heuristic.)
+		Arguments:
+		    maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joins, 64, 64)
+		Returns:
+		    z (torch.Tensor): Coordinates of shape (BATCH_SIZE, num_joints*2)
+		"""
+		_, idx = torch.max(maps.flatten(2), 2)
+		x, y = idx / 16  + 2, (idx % 64)*4 + 2 # Rescaling to (256, 256)
+		z = torch.stack((x, y), 2).flatten(1).float()
+		return z
 
 	def softargmax(self, maps, beta: float = 1e6, dim: int = 64):
 		"""
