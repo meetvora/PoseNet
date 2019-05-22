@@ -73,18 +73,20 @@ def generate_submission(predictions, out_path):
 def create_zip_code_files(output_file):
 	patoolib.create_archive(output_file, config.SUBMISSION_FILES)
 
-def print_all_attr(module):
-	attr = [i for i in dir(module) if ("__" not in i and i.upper() == i)]
-	pairs = {k: getattr(module, k) for k in attr}
+def print_all_attr(modules, logger):
 	sep = "-"*90
-	print(f"{module.__name__}\n{sep}")
-	for at in attr:
-		print(f"{at} ==> {pairs[at]}")
-	print(sep)
+	logger.info(sep)
+	for module in modules:
+		attr = [i for i in dir(module) if ("__" not in i and i.upper() == i)]
+		pairs = {k: getattr(module, k) for k in attr}
+		print(f"{module.__name__}\n{sep}")
+		for at in attr:
+			logger.info(f"{at} ==> {pairs[at]}")
+		logger.info(sep)
 
 to_cuda = lambda u: map(lambda x: x.cuda(), u)
 
 def print_termwise_loss(loss):
 	keys = loss.keys()
-	string = "\tTermwise:\t" + ("\t".join([f"{k.upper()}: {v:.6f}" for (k, v) in loss.items()]))
+	string = "=> Individual loss >>\t" + ("\t".join([f"{k.upper()}: {v:.6f}" for (k, v) in loss.items()]))
 	return string+"\n"

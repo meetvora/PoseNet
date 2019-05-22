@@ -1,8 +1,8 @@
-import ipdb
 import torch
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
+import ipdb
 
 from models.lifting import *
 from models.hrnet import *
@@ -27,7 +27,7 @@ class CyclicalMartinez(nn.Module):
 		return {'pose_3d': y3d, 'pose_2d': y2d}
 
 
-def map_to_coord(self, maps):
+def hardargmax(maps):
 		"""
 		Converts 2D Heatmaps to coordinates.
 		(NOTE: Recheck the mapping function and rescaling heuristic.)
@@ -37,8 +37,8 @@ def map_to_coord(self, maps):
 		    z (torch.Tensor): Coordinates of shape (BATCH_SIZE, num_joints*2)
 		"""
 		_, idx = torch.max(maps.flatten(2), 2)
-		x, y = (idx % 64)*4 + 2, idx / 16  + 2 # Rescaling to (256, 256)
-		z = torch.cat((x, y), 1).float()
+		x, y = idx / 16  + 2, (idx % 64)*4 + 2 # Rescaling to (256, 256)
+		z = torch.stack((x, y), 2).flatten(1).float()
 		return z
 
 
@@ -73,28 +73,28 @@ class PoseHighResolution3D(nn.Module):
 		return {'hrnet_coord': twoDCoords, 'cycl_martinez': liftOut, 'hrnet_maps': twoDMaps}
 
 
-def softargmax(maps, beta: int = 15, dim: int = 64):
+def softargmax(maps, beta: float = 100000, dim: int = 64):
 	"""
 	Applies softargmax to heatmaps and returns 2D (x,y) coordinates
 	Arguments:
 		maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joint, dim, dim)
-		beta (int): Exponentiating constant. Default = 15
+		beta (float): Exponentiating constant. Default = 100000
 		dim (int): Spatial dimension of map. Default = 64
 	Returns:
-		values (torch.Tensor): max value of heatmap; shape (BATCH_SIZE, num_joints)
+		# values (torch.Tensor): max value of heatmap; shape (BATCH_SIZE, num_joints)
 		regress_coord (torch.Tensor): (x, y) co-ordinates of shape (BATCH_SIZE, num_joints*2)
 	"""
 	batch_size, num_joints = maps.shape[0], maps.shape[1]
 	flat_map = maps.view(batch_size, num_joints, -1).float()
 	Softmax = nn.Softmax(dim=-1)
 	softmax = Softmax(flat_map * beta).float()
-	values = torch.sum(flat_map * softmax, -1)
-	posn = torch.arange(0, dim * dim)
-	idxs = torch.sum(softmax * posn.float(), -1)
-	x, y = idxs//dim, idxs%dim
-	regress_coord = torch.stack((x, y), 2)
+	# values = torch.sum(flat_map * softmax, -1)
+	posn = torch.arange(0, dim * dim).repeat(batch_size, num_joints, 1)
+	idxs = torch.sum(softmax * posn.float(), -1).int()
+	x, y = (idxs/dim)*4 + 2, (idxs%dim)*4 + 2
+	regress_coord = torch.stack((x, y), 2).float()
 	regress_coord = regress_coord.flatten(1)
-	return values, regress_coord
+	return regress_coord
 
 
 class PoseNet(nn.Module):
@@ -109,15 +109,17 @@ class PoseNet(nn.Module):
 	def __init__(self, cfg):
 		super(PoseNet, self).__init__()
 		self.twoDNet = PoseHighResolutionNet(cfg)
-		# Update NUM_JOINTS in config.posenet to include new final_layer
+		# Update NUM_JOINTS in config.posenet to include new/prev final_layer
 		# self.twoDNet.final_layer = nn.Conv2d(32, 17, kernel_size=(1, 1), stride=(1, 1))
 		self.twoDNet.init_weights(cfg.PRETRAINED, cfg.USE_GPU)
 		for param in self.twoDNet.parameters():
-			param.requires_grad = True
+			param.requires_grad = cfg.END_TO_END
 		self.liftNet = CyclicalMartinez(cfg)
+		self.liftNet.apply(weight_init)
+		self.argmax = softargmax if cfg.SOFTARGMAX else hardargmax
 
 	def forward(self, x):
 		twoDMaps = self.twoDNet(x)
-		_, twoDCoords = softargmax(twoDMaps)
+		twoDCoords = self.argmax(twoDMaps)
 		liftOut = self.liftNet(twoDCoords)
 		return {'hrnet_coord': twoDCoords, 'cycl_martinez': liftOut, 'hrnet_maps': twoDMaps}
