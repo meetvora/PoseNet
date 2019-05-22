@@ -27,24 +27,56 @@ class CyclicalMartinez(nn.Module):
 		return {'pose_3d': y3d, 'pose_2d': y2d}
 
 
-def hardargmax(maps):
-		"""
-		Converts 2D Heatmaps to coordinates.
-		(NOTE: Recheck the mapping function and rescaling heuristic.)
-		Arguments:
-		    maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joins, 64, 64)
-		Returns: 
-		    z (torch.Tensor): Coordinates of shape (BATCH_SIZE, num_joints*2)
-		"""
-		_, idx = torch.max(maps.flatten(2), 2)
-		x, y = idx / 16  + 2, (idx % 64)*4 + 2 # Rescaling to (256, 256)
-		z = torch.stack((x, y), 2).flatten(1).float()
-		return z
-
-
-class PoseHighResolution3D(nn.Module):
+class Argmax(nn.Module):
 	"""
-	An intermediate model that consists of two sub-models:
+	Module to extract coordinates from heatmaps.
+	Can switch between soft (differentiable) and hard (non-differentiable)
+	"""
+	def __init__(self, SOFTARGMAX):
+		super(Argmax, self).__init__()
+		self.get_coordinates = self.softargmax if SOFTARGMAX else self.hardargmax
+
+	def hardargmax(self, maps):
+			"""
+			Converts 2D Heatmaps to coordinates.
+			(NOTE: Recheck the mapping function and rescaling heuristic.)
+			Arguments:
+			    maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joins, 64, 64)
+			Returns:
+			    z (torch.Tensor): Coordinates of shape (BATCH_SIZE, num_joints*2)
+			"""
+			_, idx = torch.max(maps.flatten(2), 2)
+			x, y = idx / 16  + 2, (idx % 64)*4 + 2 # Rescaling to (256, 256)
+			z = torch.stack((x, y), 2).flatten(1).float()
+			return z
+
+	def softargmax(self, maps, beta: float = 1e6, dim: int = 64):
+		"""
+		Applies softargmax to heatmaps and returns 2D (x,y) coordinates
+		Arguments:
+			maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joint, dim, dim)
+			beta (float): Exponentiating constant. Default = 100000
+			dim (int): Spatial dimension of map. Default = 64
+		Returns:
+			# values (torch.Tensor): max value of heatmap; shape (BATCH_SIZE, num_joints)
+			regress_coord (torch.Tensor): (x, y) co-ordinates of shape (BATCH_SIZE, num_joints*2)
+		"""
+		batch_size, num_joints = maps.shape[0], maps.shape[1]
+		flat_map = maps.view(batch_size, num_joints, -1).float()
+		Softmax = nn.Softmax(dim=-1)
+		softmax = Softmax(flat_map * beta).float()
+		# values = torch.sum(flat_map * softmax, -1)
+		posn = torch.arange(0, dim * dim).repeat(batch_size, num_joints, 1)
+		idxs = torch.sum(softmax * posn.float(), -1).int()
+		x, y = (idxs/dim)*4 + 2, (idxs%dim)*4 + 2
+		regress_coord = torch.stack((x, y), 2).float()
+		regress_coord = regress_coord.flatten(1)
+		return regress_coord
+
+
+class PoseNet(nn.Module):
+	"""
+	The final supremo model that consists of two sub-models
 		twoDNet:
 			Pose HighResolution Net, proposed by Sun et al.
 			Frozen and uses publicly available pretrained weights.
@@ -53,57 +85,14 @@ class PoseHighResolution3D(nn.Module):
 			A 2D to 3D regressor and back to 2D.
 			Basic block inspired by Martinez et al.
 			Uses `map_to_coord` to convert heatmaps to 2D coordinates.
-			Outputs: 3D coordinates and reprojected 2D coordinates. 
-	(NOTE: Usually, only liftNet is trained with twoDNet frozen.)
+			Outputs: 3D coordinates and reprojected 2D coordinates.
 	Input: Batch of images
 	Output: 2D heatmaps, 2D coords by twoDNet, 3D and 2D coords by liftNet.
-	"""
-	def __init__(self, cfg, use_gpu):
-		super(PoseHighResolution3D, self).__init__()
-		self.twoDNet = PoseHighResolutionNet(cfg)
-		self.twoDNet.init_weights(cfg.PRETRAINED, use_gpu)
-		for param in self.twoDNet.parameters():
-		    param.requires_grad = False
-		self.liftNet = CyclicalMartinez(cfg)
-
-	def forward(self, x):
-		twoDMaps = self.twoDNet(x)
-		twoDCoords = self.map_to_coord(twoDMaps)
-		liftOut = self.liftNet(twoDCoords)
-		return {'hrnet_coord': twoDCoords, 'cycl_martinez': liftOut, 'hrnet_maps': twoDMaps}
-
-
-def softargmax(maps, beta: float = 100000, dim: int = 64):
-	"""
-	Applies softargmax to heatmaps and returns 2D (x,y) coordinates
-	Arguments:
-		maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joint, dim, dim)
-		beta (float): Exponentiating constant. Default = 100000
-		dim (int): Spatial dimension of map. Default = 64
-	Returns:
-		# values (torch.Tensor): max value of heatmap; shape (BATCH_SIZE, num_joints)
-		regress_coord (torch.Tensor): (x, y) co-ordinates of shape (BATCH_SIZE, num_joints*2)
-	"""
-	batch_size, num_joints = maps.shape[0], maps.shape[1]
-	flat_map = maps.view(batch_size, num_joints, -1).float()
-	Softmax = nn.Softmax(dim=-1)
-	softmax = Softmax(flat_map * beta).float()
-	# values = torch.sum(flat_map * softmax, -1)
-	posn = torch.arange(0, dim * dim).repeat(batch_size, num_joints, 1)
-	idxs = torch.sum(softmax * posn.float(), -1).int()
-	x, y = (idxs/dim)*4 + 2, (idxs%dim)*4 + 2
-	regress_coord = torch.stack((x, y), 2).float()
-	regress_coord = regress_coord.flatten(1)
-	return regress_coord
-
-
-class PoseNet(nn.Module):
-	"""
-	The final supremo model that improves upon PoseHighResolution3D by applying
-	softargmax to heatmaps. 
 	NOTE:
-		We use new pretrained weights for twoDNet but train the entire model
-	in an end-to-end fashion.
+		The outputs of twoDNet pass though Argmax to extract coordinates
+			for liffNet
+		We use pretrained weights for twoDNet but train the entire model
+			in an end-to-end fashion.
 		Pass config.posenet during initialization
 	"""
 	def __init__(self, cfg):
@@ -116,10 +105,10 @@ class PoseNet(nn.Module):
 			param.requires_grad = cfg.END_TO_END
 		self.liftNet = CyclicalMartinez(cfg)
 		self.liftNet.apply(weight_init)
-		self.argmax = softargmax if cfg.SOFTARGMAX else hardargmax
+		self.argmax = Argmax(cfg.SOFTARGMAX)
 
 	def forward(self, x):
 		twoDMaps = self.twoDNet(x)
-		twoDCoords = self.argmax(twoDMaps)
+		twoDCoords = self.argmax.get_coordinates(twoDMaps)
 		liftOut = self.liftNet(twoDCoords)
 		return {'hrnet_coord': twoDCoords, 'cycl_martinez': liftOut, 'hrnet_maps': twoDMaps}
