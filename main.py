@@ -84,7 +84,7 @@ def evaluate(model, eval_loader, pretrained=False):
 def main():
 	normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-	train_set = DataSet(config.DATA_PATH, image_transforms=normalize, num_joints=16)
+	train_set = DataSet(config.DATA_PATH, image_transforms=normalize, num_joints=17)
 	train_loader = DataLoader(train_set, batch_size=config.BATCH_SIZE, num_workers=config.WORKERS, shuffle=True)
 
 	eval_set = DataSet(config.DATA_PATH, normalize=False, mode="valid", image_transforms=normalize, heatmap2d=False)

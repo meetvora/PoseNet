@@ -4,15 +4,15 @@ import config
 
 USE_GPU = config.USE_GPU
 NUM_JOINTS = config.NUM_JOINTS
-#(True, False) for [END_TO_END, SOFTARGMAX] is not possible
+#(True, False) for (END_TO_END, SOFTARGMAX) is not possible
 END_TO_END, SOFTARGMAX = (True, True)
 
 # Term-wise loss coefficients
 LOSS_COEFF = {
-	'hrnet_maps': 0,
+	'hrnet_maps': 10,
 	'cycl_martinez':{
 		'pose_3d': 1,
-		'pose_2d': 0
+		'pose_2d': 0.001
 	}
 }
 
@@ -33,11 +33,8 @@ THREED = {
 }
 
 # HRNet Parameters
-# Points to weights stored by scripts/finetuneHRN.py or pre-trained MPII weights (if NUM_JOINTS = 16)
-if NUM_JOINTS == 16:
-	PRETRAINED = '/cluster/home/voram/mp/PoseNet/models/weights/pose_hrnet_w32_256x256.pth'
-else:
-	PRETRAINED = os.path.join(config.finetune.LOG_PATH, config.finetune.NAME)
+# Points to weights stored by pre-training HRN via scripts/trainHRN.py
+PRETRAINED = "/cluster/home/voram/mp/PoseNet/log/finetune/HRN_TRAIN-master-Adam-5"
 INIT_WEIGHTS = True
 TARGET_TYPE = config.hrnet.TARGET_TYPE
 IMAGE_SIZE = config.hrnet.IMAGE_SIZE

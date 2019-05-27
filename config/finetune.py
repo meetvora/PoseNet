@@ -1,11 +1,12 @@
 import os
 import subprocess
 import config
+import datetime
 
 USE_GPU = config.USE_GPU
 
 GAUS_KERNEL = 3
-GAUS_STD = 2
+GAUS_STD = 1
 
 OPTIMIZER = "Adam"
 
@@ -13,7 +14,7 @@ OPTIMIZER = "Adam"
 LOG_PATH = "./log/finetune/"
 DATA_PATH = "/cluster/project/infk/hilliges/lectures/mp19/project2/"
 
-NUM_EPOCHS = 1
+NUM_EPOCHS = 5
 BATCH_SIZE = 32
 WORKERS = 0
 LEARNING_RATE = 0.001
@@ -27,3 +28,5 @@ NAME = "%s-%s-%s-%s" % ("FINETUNE", BRANCH, OPTIMIZER, NUM_EPOCHS)
 
 if not os.path.isdir(LOG_PATH):
 	os.mkdir(LOG_PATH)
+
+LOG_NAME = os.path.join(LOG_PATH, datetime.datetime.now().strftime('%d-%m--%H-%M'))

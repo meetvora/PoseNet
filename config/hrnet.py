@@ -15,7 +15,7 @@ THREED = {
 }
 
 # HRNet Parameters
-PRETRAINED = '/cluster/home/voram/mp/PoseNet/models/weights/pose_hrnet_w32_256x256.pth'
+PRETRAINED = None
 TARGET_TYPE = 'gaussian'
 INIT_WEIGHTS = True
 IMAGE_SIZE = [256, 256]

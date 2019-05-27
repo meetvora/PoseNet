@@ -22,8 +22,8 @@ from utils import *
 if config.finetune.USE_GPU:
 	torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-logFormatter = "%(levelname)s: %(message)s"
-logging.basicConfig(format=logFormatter, level=logging.DEBUG)
+logFormatter = "%(asctime)s - [%(levelname)s] %(message)s"
+logging.basicConfig(filename=config.finetune.LOG_NAME, filemode='a', format=logFormatter, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 def get_new_HR2D():
@@ -31,7 +31,7 @@ def get_new_HR2D():
 	Returns an instance of HRNet with new final Conv2d layer
 	"""
 	model = models.hrnet.PoseHighResolutionNet(config.hrnet)
-	model.init_weights(config.hrnet.PRETRAINED, config.finetune.USE_GPU)
+	model.init_weights(None, config.finetune.USE_GPU)
 	final_layer = nn.Conv2d(32, 17, kernel_size=(1, 1), stride=(1, 1))
 	nn.init.normal_(final_layer.weight, std=0.001)
 	for name, _ in final_layer.named_parameters():
@@ -74,7 +74,7 @@ def main():
 	train_loader = DataLoader(train_set, batch_size=config.finetune.BATCH_SIZE, num_workers=config.finetune.WORKERS, shuffle=True)
 
 	model = get_new_HR2D()
-	print_all_attr(config.finetune)
+	print_all_attr([config.finetune], logger)
 	train(model, train_loader)
 	logger.info("[+] Finished training.\nSaving model...")
 	torch.save(model.state_dict(), os.path.join(config.finetune.LOG_PATH, config.finetune.NAME))

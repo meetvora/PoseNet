@@ -18,7 +18,7 @@ OPTIMIZER = "Adam"
 
 # Experiment parameters
 USE_GPU = True
-NUM_JOINTS = 16
+NUM_JOINTS = 17
 BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode("utf-8")
 NAME = "%s-%s-%s_%s" % (BRANCH, OPTIMIZER, BATCH_SIZE, NUM_JOINTS)
 
