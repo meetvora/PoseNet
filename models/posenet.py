@@ -46,11 +46,11 @@ class Argmax(nn.Module):
 		    z (torch.Tensor): Coordinates of shape (BATCH_SIZE, num_joints*2)
 		"""
 		_, idx = torch.max(maps.flatten(2), 2)
-		x, y = idx / 16  + 2, (idx % 64)*4 + 2 # Rescaling to (256, 256)
+		x, y = idx / 16  + 2, torch.remainder(idx, 64) * 4 + 2 # Rescaling to (256, 256)
 		z = torch.stack((x, y), 2).flatten(1).float()
 		return z
 
-	def softargmax(self, maps, beta: float = 1e6, dim: int = 64):
+	def softargmax(self, maps, beta: float = 1e7, dim: int = 64):
 		"""
 		Applies softargmax to heatmaps and returns 2D (x,y) coordinates
 		Arguments:
@@ -68,10 +68,13 @@ class Argmax(nn.Module):
 		# values = torch.sum(flat_map * softmax, -1)
 		posn = torch.arange(0, dim * dim).repeat(batch_size, num_joints, 1)
 		idxs = torch.sum(softmax * posn.float(), -1).int()
-		x, y = (idxs/dim)*4 + 2, (idxs%dim)*4 + 2
+		x, y = (idxs/dim)*4 + 2, torch.remainder(idxs, dim) * 4 + 2
 		regress_coord = torch.stack((x, y), 2).float()
 		regress_coord = regress_coord.flatten(1)
 		return regress_coord
+
+	def forward(self, x):
+		return self.get_coordinates(x)
 
 
 class PoseNet(nn.Module):
@@ -109,6 +112,6 @@ class PoseNet(nn.Module):
 
 	def forward(self, x):
 		twoDMaps = self.twoDNet(x)
-		twoDCoords = self.argmax.get_coordinates(twoDMaps)
+		twoDCoords = self.argmax(twoDMaps)
 		liftOut = self.liftNet(twoDCoords)
 		return {'hrnet_coord': twoDCoords, 'cycl_martinez': liftOut, 'hrnet_maps': twoDMaps}

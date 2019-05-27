@@ -478,22 +478,23 @@ class PoseHighResolutionNet(nn.Module):
                     if name in ['bias']:
                         nn.init.constant_(m.bias, 0)
 
-        if os.path.isfile(pretrained):
-            if device:
-                pretrained_state_dict = torch.load(pretrained)
-            else:
-                pretrained_state_dict = torch.load(pretrained, map_location="cpu")
-            logger.info('=> loading pretrained model {}'.format(pretrained))
+        if pretrained:
+            if os.path.isfile(pretrained):
+                if device:
+                    pretrained_state_dict = torch.load(pretrained)
+                else:
+                    pretrained_state_dict = torch.load(pretrained, map_location="cpu")
+                logger.info('=> loading pretrained model {}'.format(pretrained))
 
-            need_init_state_dict = {}
-            for name, m in pretrained_state_dict.items():
-                if name.split('.')[0] in self.pretrained_layers \
-                   or self.pretrained_layers[0] is '*':
-                    need_init_state_dict[name] = m
-            self.load_state_dict(need_init_state_dict, strict=False)
-        elif pretrained:
-            logger.error('=> please download pre-trained models first!')
-            raise ValueError('{} is not exist!'.format(pretrained))
+                need_init_state_dict = {}
+                for name, m in pretrained_state_dict.items():
+                    if name.split('.')[0] in self.pretrained_layers \
+                       or self.pretrained_layers[0] is '*':
+                        need_init_state_dict[name] = m
+                self.load_state_dict(need_init_state_dict, strict=False)
+            else:
+                logger.error('=> please download pre-trained models first!')
+                raise ValueError('{} is not exist!'.format(pretrained))
 
 
 def get_pose_net(cfg, is_train, **kwargs):
