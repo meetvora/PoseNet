@@ -9,10 +9,8 @@ import numpy as np
 from torch.utils.data import DataLoader
 
 import models
-import models.hrnet
 import models.posenet
 import config
-import config.hrnet
 import config.posenet
 from data import DataSet
 from utils import *
@@ -24,14 +22,21 @@ logFormatter = "%(asctime)s - [%(levelname)s] %(message)s"
 logging.basicConfig(filename=config.LOG_NAME, filemode='a', format=logFormatter, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def train(model, train_loader):
-	model.train()
+def train(model, train_loader, eval_loader):
+	"""
+	Train a PoseNet model given parameters in config
+	Arguments:
+		model (nn.Module) - PoseNet instance
+		train_loader (torch.data.DataLoader) - Dataloader for training data
+		evak_loader (torch.data.DataLoader) - Dataloader for validation data
+	"""
 	optimizer = getattr(optim, config.OPTIMIZER)(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
 	overall_iter = 0
 	JointLoss = JointsMSELoss()
 	logger.info("[+] Starting training.")
 
 	for epoch in range(config.NUM_EPOCHS):
+		model.train()
 		for batch_idx, sample in enumerate(train_loader):
 			image, pose3d, heatmap2d = sample['image'], sample['pose3d'], sample['heatmap2d']
 			if config.USE_GPU:
@@ -59,13 +64,15 @@ def train(model, train_loader):
 
 			overall_iter += 1
 			if overall_iter % config.SAVE_ITER_FREQ == 0:
-				torch.save(model.state_dict(), os.path.join(config.LOG_PATH, config.NAME))
+				torch.save(model.state_dict(), os.path.join(config.LOG_PATH, config.NAME + f"-iter={overall_iter}"))
 
-def evaluate(model, eval_loader, pretrained=False):
+		evaluate(model, eval_loader, epoch)
+
+def evaluate(model, eval_loader, epoch, pretrained=False):
 	if pretrained:
 		model.load_state_dict(torch.load(os.path.join(config.LOG_PATH, config.NAME)))
 
-	logger.info("[+] Starting evaluation.")
+	logger.info("[+] Evaluating at end of epoch %s." % epoch)
 	with torch.no_grad():
 		model.eval()
 		prediction = list()
@@ -78,8 +85,7 @@ def evaluate(model, eval_loader, pretrained=False):
 			prediction = np.append(prediction, p3d_out)
 
 	prediction = prediction.reshape(-1, 51)
-	generate_submission(prediction, "submission-%s.csv.gz"%(config.NAME))
-	create_zip_code_files("code-%s.zip"%(config.NAME))
+	generate_submission(prediction, "submission-%s-epoch-%s.csv.gz"%(config.NAME, epoch))
 
 def main():
 	normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
@@ -94,8 +100,9 @@ def main():
 
 	print_all_attr([config, config.posenet], logger)
 
-	train(model, train_loader)
-	evaluate(model, eval_loader, pretrained=False)
+	train(model, train_loader, eval_loader)
+
+	create_zip_code_files("code-%s.zip"%(config.NAME))
 
 if __name__ == '__main__':
 	try:

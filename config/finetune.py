@@ -14,7 +14,7 @@ OPTIMIZER = "Adam"
 LOG_PATH = "./log/finetune/"
 DATA_PATH = "/cluster/project/infk/hilliges/lectures/mp19/project2/"
 
-NUM_EPOCHS = 5
+NUM_EPOCHS = 1
 BATCH_SIZE = 32
 WORKERS = 0
 LEARNING_RATE = 0.001
