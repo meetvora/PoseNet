@@ -47,12 +47,10 @@ def train(model, train_loader, eval_loader):
 			termwise_loss = {
 				'heatmap': JointLoss(output['hrnet_maps'], heatmap2d),
 				'cyclic_inward': F.mse_loss(output['cycl_martinez']['pose_3d'], pose3d),
-				'cyclic_outward': F.mse_loss(output['cycl_martinez']['pose_2d'], output['hrnet_coord'])
 			}
 
 			loss = config.posenet.LOSS_COEFF['hrnet_maps'] * termwise_loss['heatmap'] + \
-				config.posenet.LOSS_COEFF['cycl_martinez']['pose_3d'] * termwise_loss['cyclic_inward'] + \
-				config.posenet.LOSS_COEFF['cycl_martinez']['pose_2d'] * termwise_loss['cyclic_outward']
+				config.posenet.LOSS_COEFF['cycl_martinez']['pose_3d'] * termwise_loss['cyclic_inward']
 
 			loss.backward()
 			optimizer.step()
@@ -67,6 +65,7 @@ def train(model, train_loader, eval_loader):
 				torch.save(model.state_dict(), os.path.join(config.LOG_PATH, config.NAME + f"-iter={overall_iter}"))
 
 		evaluate(model, eval_loader, epoch)
+		config.posenet.LOSS_COEFF['hrnet_maps'] /= 10
 
 def evaluate(model, eval_loader, epoch, pretrained=False):
 	if pretrained:

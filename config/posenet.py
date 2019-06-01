@@ -8,7 +8,7 @@ END_TO_END, SOFTARGMAX = (True, True)
 
 # Term-wise loss coefficients
 LOSS_COEFF = {
-    'hrnet_maps': 10,
+    'hrnet_maps': 1000,
     'cycl_martinez': {
         'pose_3d': 1,
         'pose_2d': 0.0000
