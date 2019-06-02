@@ -12,7 +12,8 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from PIL import Image
 
-from config.finetune import USE_GPU, GAUS_KERNEL, GAUS_STD
+from config import USE_GPU
+from config.finetune import GAUS_KERNEL, GAUS_STD
 
 class DataSet(Dataset):
 	def __init__(self, root_dir, image_transforms=[], transform_params=[], mode="train", num_joints=17, heatmap2d=True):
@@ -30,55 +31,58 @@ class DataSet(Dataset):
 			self.target3d = torch.from_numpy(target['pose3d'][()].astype(np.float32))
 			self.target2d = torch.from_numpy(target['pose2d'][()].astype(np.float32))
 			if num_joints == 16:
-				self.target2d = reduce_joints_to_16(self.target2d)
+				self.target2d = self._reduce_joints_to_16(self.target2d)
 			self.image_preprocess.append(transforms.ColorJitter(0.5, 0.5, 0.5, 0.5))
 
 		self.mean = torch.from_numpy(np.loadtxt(os.path.join(root_dir,'annot',"mean.txt")).reshape([1, 17, 3]).astype(np.float32))
 		self.std = torch.from_numpy(np.loadtxt(os.path.join(root_dir,'annot',"std.txt")).reshape([1, 17, 3]).astype(np.float32))
 
-		self.image_preprocess.append(transforms.ToTensor())
-		self.image_preprocess.append(transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]))
+		self.image_preprocess = transforms.Compose(self.image_preprocess)
+		self.img_mean = torch.as_tensor((0.485, 0.456, 0.406), dtype=torch.float32, device="cpu")
+		self.img_std = torch.as_tensor((0.229, 0.224, 0.225), dtype=torch.float32, device="cpu")
 
 		if heatmap2d:
 			self.gaussian_filter = GaussianSmoothing2D(num_joints, GAUS_KERNEL, GAUS_STD)
 
-		self.image_preprocess = transforms.Compose(self.image_preprocess)
 		if image_transforms:
 			assert len(image_transforms) == len(transform_params)
 			self.image_transforms = [getattr(transforms, op)(*param) for op, param in zip(self.transforms_ops, transform_params)]
 			self.joint_transforms = [getattr(self, op) for op in self.transforms_ops]
 
-		self.n_samples = len(self.file_paths)
-
 	def __len__(self):
-		return self.n_samples * (1 + len(self.transforms_ops))
+		return len(self.file_paths)
 
 	def __getitem__(self, idx):
-		_idx = idx % self.n_samples
-		image = Image.open(self.file_paths[_idx])
+		image = Image.open(self.file_paths[idx])
 		image = self.image_preprocess(image)
+
+		if self.train:
+			target_3D = (self.target3d[idx] - self.mean) / self.std
+			target_2D = self.target2d[idx]
+			p = np.random.rand(1)
+
+			if p >= 0.5:
+				for idx_ in range(len(self.image_transforms)):
+					image = self.image_transforms[idx_](image)
+					target_2D = self.joint_transforms[idx_](target_2D)
+
+		image = transforms.functional.to_tensor(image)
+		image = image.sub_(self.img_mean[:, None, None]).div_(self.img_std[:, None, None])
 		if USE_GPU:
 			image = image.cuda()
+
 		if not self.train:
 			return image
-
-		target_3D = (self.target3d[_idx] - self.mean) / self.std
-		target_2D = self.target2d[_idx]
-
-		transformOp_index = idx // self.n_samples - 1
-		if transformOp_index > 0:
-			image = self.image_transforms[transformOp_index](image)
-			target_2D = self.joint_transforms[transformOp_index](target_2D)
 
 		sample = {'image': image, 'pose3d': target_3D.flatten(), 'pose2d': target_2D.flatten()}
 
 		if self.heatmap2d:
-			heatmap = self.generate_2Dheatmaps(target_2D)
+			heatmap = self._generate_2Dheatmaps(target_2D)
 			sample['heatmap2d'] = heatmap
 
 		return sample
 
-	def generate_2Dheatmaps(self, joints, map_dim=64):
+	def _generate_2Dheatmaps(self, joints, map_dim=64):
 		"""
 		Arguments:
 			joints (torch.Tensor): An individual target tensor of shape (num_joints, 2).
@@ -90,11 +94,11 @@ class DataSet(Dataset):
 		downscale = 256 / map_dim
 		maps = torch.zeros((num_joints, map_dim, map_dim))
 		x, y = joints[:, 0].long(), joints[:, 1].long()
-		maps[np.arange(num_joints), x/downscale, y/downscale] = 1
+		maps[np.arange(num_joints), x//downscale, y//downscale] = 1
 		maps = self.gaussian_filter(maps)
 		return maps
 
-	def reduce_joints(self, joints_17):
+	def _reduce_joints(self, joints_17):
 		"""
 		Maps 17 joints of H3.6M dataset to 16 joints of MPII
 		H3.6 joints = ['Hip', 'RHip', 'RKnee', 'RFoot', 'LHip', 'LKnee', 'LFoot', 'Spine', 'Thorax', 'Neck/Nose', 'Head', 'LShoulder', 'LElbow', 'LWrist', 'RShoulder', 'RElbow', 'RWrist']
@@ -112,8 +116,8 @@ class DataSet(Dataset):
 
 	def RandomHorizontalFlip(self, joints):
 		pairs = np.asarray([[1, 4], [2, 5], [3, 6], [14, 11], [15, 12], [16, 13]])
-		joints[pairs] = joints[np.fliplr(pairs)]
-		return data
+		joints[pairs, :] = torch.flip(joints[pairs, :], (1, ))
+		return joints
 
 
 class GaussianSmoothing2D(nn.Module):

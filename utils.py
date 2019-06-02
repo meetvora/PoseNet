@@ -79,7 +79,8 @@ def print_all_attr(modules, logger):
 	for module in modules:
 		attr = [i for i in dir(module) if ("__" not in i and i.upper() == i)]
 		pairs = {k: getattr(module, k) for k in attr}
-		logger.info(f"{module.__name__}\n{sep}")
+		logger.info(f"{module.__name__}")
+		logger.info(f"{sep}")
 		for at in attr:
 			logger.info(f"{at} ==> {pairs[at]}")
 		logger.info(sep)

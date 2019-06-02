@@ -47,11 +47,11 @@ if __LOG_TO_FILE__:
 	__LOG_PARAMS__ = {
 		'filename':LOG_NAME,
 		'filemode':'a',
-		'format':logFormatter,
+		'format':__logFormatter__,
 		'level':logging.DEBUG}
 else:
 	__LOG_PARAMS__ = {
-		'format':logFormatter,
+		'format':__logFormatter__,
 		'level':logging.DEBUG,
 		'stream':sys.stdout
 	}

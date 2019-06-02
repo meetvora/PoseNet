@@ -69,7 +69,7 @@ def train(model, train_loader):
 
 def main():
 	train_set = DataSet(config.DATA_PATH, mode="train", image_transforms=["RandomHorizontalFlip"], transform_params=[(1, )])
-	train_loader = DataLoader(train_set, batch_size=config.BATCH_SIZE, shuffle=True)
+	train_loader = DataLoader(train_set, batch_size=config.finetune.BATCH_SIZE, shuffle=True)
 
 	model = get_new_HR2D()
 	print_all_attr([config, config.finetune], logger)
