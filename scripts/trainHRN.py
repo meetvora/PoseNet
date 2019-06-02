@@ -68,13 +68,11 @@ def train(model, train_loader):
 				torch.save(model.state_dict(), os.path.join(config.finetune.LOG_PATH, config.finetune.NAME))
 
 def main():
-	normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-
-	train_set = DataSet(config.finetune.DATA_PATH, image_transforms=normalize, num_joints=17)
-	train_loader = DataLoader(train_set, batch_size=config.finetune.BATCH_SIZE, num_workers=config.finetune.WORKERS, shuffle=True)
+	train_set = DataSet(config.DATA_PATH, mode="train", image_transforms=["RandomHorizontalFlip"], transform_params=[(1, )])
+	train_loader = DataLoader(train_set, batch_size=config.BATCH_SIZE, shuffle=True)
 
 	model = get_new_HR2D()
-	print_all_attr([config.finetune], logger)
+	print_all_attr([config, config.finetune], logger)
 	train(model, train_loader)
 	logger.info("[+] Finished training.\nSaving model...")
 	torch.save(model.state_dict(), os.path.join(config.finetune.LOG_PATH, config.finetune.NAME))

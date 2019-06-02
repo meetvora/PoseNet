@@ -14,7 +14,7 @@ OPTIMIZER = "Adam"
 LOG_PATH = "./log/finetune/"
 DATA_PATH = "/cluster/project/infk/hilliges/lectures/mp19/project2/"
 
-NUM_EPOCHS = 1
+NUM_EPOCHS = 3
 BATCH_SIZE = 32
 WORKERS = 0
 LEARNING_RATE = 0.001
@@ -24,7 +24,7 @@ LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
 
 BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode("utf-8")
-NAME = "%s-%s-%s-%s" % ("FINETUNE", BRANCH, OPTIMIZER, NUM_EPOCHS)
+NAME = "%s-%s-%s-%s-%s" % ("FINETUNE", BRANCH, OPTIMIZER, NUM_EPOCHS, datetime.datetime.now().strftime('%d-%H'))
 
 if not os.path.isdir(LOG_PATH):
 	os.mkdir(LOG_PATH)
