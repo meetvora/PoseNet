@@ -13,6 +13,7 @@ import models.posenet
 import config
 import config.posenet
 from data import DataSet
+from loss import *
 from utils import *
 
 if config.USE_GPU:
@@ -27,11 +28,12 @@ def train(model, train_loader, eval_loader):
 	Arguments:
 		model (nn.Module) - PoseNet instance
 		train_loader (torch.data.DataLoader) - Dataloader for training data
-		evak_loader (torch.data.DataLoader) - Dataloader for validation data
+		eval_loader (torch.data.DataLoader) - Dataloader for validation data
 	"""
 	optimizer = getattr(optim, config.OPTIMIZER)(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
 	overall_iter = 0
 	JointLoss = JointsMSELoss()
+	BoneSymmLoss = BoneSymmMSELoss()
 	logger.info("[+] Starting training.")
 
 	for epoch in range(config.NUM_EPOCHS):
@@ -46,16 +48,18 @@ def train(model, train_loader, eval_loader):
 			termwise_loss = {
 				'heatmap': JointLoss(output['hrnet_maps'], heatmap2d),
 				'cyclic_inward': F.mse_loss(output['cycl_martinez']['pose_3d'], pose3d),
+				'bone_symm': BoneSymmLoss(output['cycl_martinez']['pose_3d'])
 			}
 
 			loss = config.posenet.LOSS_COEFF['hrnet_maps'] * termwise_loss['heatmap'] + \
-				config.posenet.LOSS_COEFF['cycl_martinez']['pose_3d'] * termwise_loss['cyclic_inward']
+				config.posenet.LOSS_COEFF['cycl_martinez']['pose_3d'] * termwise_loss['cyclic_inward'] + \
+				config.posenet.LOSS_COEFF['bone_symm'] * termwise_loss['bone_symm']
 
 			loss.backward()
 			optimizer.step()
 
 			if batch_idx % config.PRINT_BATCH_FREQ == 0:
-				mpjpe = compute_MPJPE(output['cycl_martinez']['pose_3d'].detach(), pose3d.detach(), train_loader.dataset.std.numpy())
+				mpjpe = MPJPE_(output['cycl_martinez']['pose_3d'].detach(), pose3d.detach(), train_loader.dataset.std.numpy())
 				logger.debug(f'Train Epoch: {epoch} [{batch_idx}]\tTotal Loss: {loss.item():.6f}\tMPJPE: {mpjpe:.6f}')
 				logger.debug(print_termwise_loss(termwise_loss))
 

@@ -31,7 +31,7 @@ def get_new_HR2D():
 	Returns an instance of HRNet with new final Conv2d layer
 	"""
 	model = models.hrnet.PoseHighResolutionNet(config.hrnet)
-	model.init_weights(None, config.finetune.USE_GPU)
+	model.init_weights(config.finetune.BASE_WEIGHTS, config.finetune.USE_GPU)
 	final_layer = nn.Conv2d(32, 17, kernel_size=(1, 1), stride=(1, 1))
 	nn.init.normal_(final_layer.weight, std=0.001)
 	for name, _ in final_layer.named_parameters():

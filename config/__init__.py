@@ -19,7 +19,7 @@ SAVE_ITER_FREQ = 2000
 OPTIMIZER = "Adam"
 
 # Experiment parameters
-USE_GPU = True
+USE_GPU, __LOG_TO_FILE__ = (True, True)
 NUM_JOINTS = 17
 BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode("utf-8")
 NAME = "%s-%s-%s_%s" % (BRANCH, OPTIMIZER, BATCH_SIZE, NUM_JOINTS)
@@ -41,7 +41,6 @@ if not os.path.isdir(LOG_PATH):
 	os.mkdir(LOG_PATH)
 
 LOG_NAME = os.path.join(LOG_PATH, f"{datetime.datetime.now().strftime('%d-%m--%H-%M')}.log")
-__LOG_TO_FILE__ = True
 __logFormatter__ = "%(asctime)s - [%(levelname)s] %(message)s"
 if __LOG_TO_FILE__:
 	__LOG_PARAMS__ = {

@@ -22,7 +22,7 @@ class DataSet(Dataset):
 		file_names = open(os.path.join(root_dir,"annot","%s_images.txt"%mode)).readlines()
 		self.file_paths = [os.path.join(root_dir, "images", path[:-1]) for path in file_names]
 		self.heatmap2d = heatmap2d
-		self.image_preprocess = []
+		self.image_preprocess, self.image_transforms = [], []
 		self.transforms_ops = image_transforms
 
 		if self.train:
@@ -32,7 +32,7 @@ class DataSet(Dataset):
 			self.target2d = torch.from_numpy(target['pose2d'][()].astype(np.float32))
 			if num_joints == 16:
 				self.target2d = self._reduce_joints_to_16(self.target2d)
-			self.image_preprocess.append(transforms.ColorJitter(0.5, 0.5, 0.5, 0.5))
+			self.image_preprocess.append(transforms.ColorJitter(0.2, 0.2, 0.2, 0.2))
 
 		self.mean = torch.from_numpy(np.loadtxt(os.path.join(root_dir,'annot',"mean.txt")).reshape([1, 17, 3]).astype(np.float32))
 		self.std = torch.from_numpy(np.loadtxt(os.path.join(root_dir,'annot',"std.txt")).reshape([1, 17, 3]).astype(np.float32))
@@ -61,15 +61,14 @@ class DataSet(Dataset):
 			target_2D = self.target2d[idx]
 			p = np.random.rand(1)
 
-			if p >= 0.5:
+			if self.image_transforms and p >= 0.5:
 				for idx_ in range(len(self.image_transforms)):
 					image = self.image_transforms[idx_](image)
 					target_2D = self.joint_transforms[idx_](target_2D)
 
 		image = transforms.functional.to_tensor(image)
 		image = image.sub_(self.img_mean[:, None, None]).div_(self.img_std[:, None, None])
-		if USE_GPU:
-			image = image.cuda()
+		image = image.cuda() if USE_GPU else image
 
 		if not self.train:
 			return image

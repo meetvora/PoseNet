@@ -11,8 +11,9 @@ LOSS_COEFF = {
     'hrnet_maps': 1000,
     'cycl_martinez': {
         'pose_3d': 1,
-        'pose_2d': 0.0000
-    }
+        'pose_2d': 0.0000,
+    },
+    'bone_symm': 1e-3,
 }
 
 # Martinez Parameters
@@ -33,7 +34,7 @@ THREED = {
 
 # HRNet Parameters
 # Points to weights stored by pre-training HRN via scripts/trainHRN.py
-PRETRAINED = "/cluster/home/voram/mp/PoseNet/log/finetune/FINETUNE-master-Adam-1"
+PRETRAINED = "/cluster/home/voram/mp/PoseNet/log/finetune/FINETUNE-augmentation-Adam-3-02-21"
 INIT_WEIGHTS = True
 TARGET_TYPE = config.hrnet.TARGET_TYPE
 IMAGE_SIZE = config.hrnet.IMAGE_SIZE
