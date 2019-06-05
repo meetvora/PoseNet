@@ -34,9 +34,9 @@ class Argmax(nn.Module):
 	"""
 	def __init__(self, SOFTARGMAX):
 		super(Argmax, self).__init__()
-		self.get_coordinates = self.softargmax if SOFTARGMAX else self.hardargmax
+		self.get_coordinates = self._softargmax if SOFTARGMAX else self._hardargmax
 
-	def hardargmax(self, maps):
+	def _hardargmax(self, maps: torch.Tensor) -> torch.Tensor:
 		"""
 		Converts 2D Heatmaps to coordinates.
 		(NOTE: Recheck the mapping function and rescaling heuristic.)
@@ -50,7 +50,7 @@ class Argmax(nn.Module):
 		z = torch.stack((x, y), 2).flatten(1).float()
 		return z
 
-	def softargmax(self, maps, beta: float = 1e7, dim: int = 64):
+	def _softargmax(self, maps: torch.Tensor, beta: float = 1e7, dim: int = 64) -> torch.Tensor:
 		"""
 		Applies softargmax to heatmaps and returns 2D (x,y) coordinates
 		Arguments:
@@ -101,8 +101,6 @@ class PoseNet(nn.Module):
 	def __init__(self, cfg):
 		super(PoseNet, self).__init__()
 		self.twoDNet = PoseHighResolutionNet(cfg)
-		# Update NUM_JOINTS in config.posenet to include new/prev final_layer
-		# self.twoDNet.final_layer = nn.Conv2d(32, 17, kernel_size=(1, 1), stride=(1, 1))
 		self.twoDNet.init_weights(cfg.PRETRAINED, cfg.USE_GPU)
 		for param in self.twoDNet.parameters():
 			param.requires_grad = cfg.END_TO_END

@@ -9,15 +9,19 @@ import math
 
 from skimage import io
 from torch.utils.data import Dataset
+from torch.utils.data import DataLoader
 from torchvision import transforms
 from PIL import Image
+from typing import List, Tuple
 
 from config import USE_GPU
 from config.finetune import GAUS_KERNEL, GAUS_STD
 
 class DataSet(Dataset):
-	def __init__(self, root_dir, image_transforms=[], transform_params=[], mode="train", num_joints=17, heatmap2d=True):
+	def __init__(self, root_dir: str, image_transforms: List[str] = [], transform_params: List[Tuple] = [], mode: str = "train", num_joints: int = 17, heatmap2d: bool = True) -> None:
 		self.root_dir = root_dir
+		if mode not in ["train", "valid"]:
+			raise ValueError("Unsupported mode.")
 		self.train = mode.lower() == "train"
 		file_names = open(os.path.join(root_dir,"annot","%s_images.txt"%mode)).readlines()
 		self.file_paths = [os.path.join(root_dir, "images", path[:-1]) for path in file_names]
@@ -49,10 +53,10 @@ class DataSet(Dataset):
 			self.image_transforms = [getattr(transforms, op)(*param) for op, param in zip(self.transforms_ops, transform_params)]
 			self.joint_transforms = [getattr(self, op) for op in self.transforms_ops]
 
-	def __len__(self):
+	def __len__(self) -> int:
 		return len(self.file_paths)
 
-	def __getitem__(self, idx):
+	def __getitem__(self, idx: int):
 		image = Image.open(self.file_paths[idx])
 		image = self.image_preprocess(image)
 
@@ -81,8 +85,8 @@ class DataSet(Dataset):
 
 		return sample
 
-	def _generate_2Dheatmaps(self, joints, map_dim=64):
-		"""
+	def _generate_2Dheatmaps(self, joints: torch.Tensor, map_dim: int = 64) -> torch.Tensor:
+		""" Generates 2d heatmaps from coordinates. 
 		Arguments:
 			joints (torch.Tensor): An individual target tensor of shape (num_joints, 2).
 		Returns:
@@ -97,7 +101,7 @@ class DataSet(Dataset):
 		maps = self.gaussian_filter(maps)
 		return maps
 
-	def _reduce_joints(self, joints_17):
+	def _reduce_joints(self, joints_17: torch.Tensor) -> torch.Tensor:
 		"""
 		Maps 17 joints of H3.6M dataset to 16 joints of MPII
 		H3.6 joints = ['Hip', 'RHip', 'RKnee', 'RFoot', 'LHip', 'LKnee', 'LFoot', 'Spine', 'Thorax', 'Neck/Nose', 'Head', 'LShoulder', 'LElbow', 'LWrist', 'RShoulder', 'RElbow', 'RWrist']
@@ -113,7 +117,7 @@ class DataSet(Dataset):
 		permutation = [3, 2, 1, 4, 5, 6, 0, 8, 9, 10, 16, 15, 14, 11, 12, 13]
 		return joints_17[:, permutation, :]
 
-	def RandomHorizontalFlip(self, joints):
+	def RandomHorizontalFlip(self, joints: torch.Tensor) -> torch.Tensor:
 		pairs = np.asarray([[1, 4], [2, 5], [3, 6], [14, 11], [15, 12], [16, 13]])
 		joints[pairs, :] = torch.flip(joints[pairs, :], (1, ))
 		return joints
@@ -128,7 +132,7 @@ class GaussianSmoothing2D(nn.Module):
 		dim (int): Number of dimensions of the data.
 		input_size (int): (H, W) Dimension of channel. Assumes H = W.
 	"""
-	def __init__(self, channels: int, kernel_size: int, sigma: float, dim: int = 2, input_size: int = 64):
+	def __init__(self, channels: int, kernel_size: int, sigma: float, dim: int = 2, input_size: int = 64) -> None:
 		super(GaussianSmoothing2D, self).__init__()
 		kernel_size = [kernel_size] * dim
 		sigma = [sigma] * dim
@@ -148,7 +152,7 @@ class GaussianSmoothing2D(nn.Module):
 		self.num_channels = channels
 		self.dim_input = input_size
 
-	def forward(self, x):
+	def forward(self, x: torch.Tensor) -> torch.Tensor:
 		"""
 		Apply gaussian filter to input.
 		Arguments:

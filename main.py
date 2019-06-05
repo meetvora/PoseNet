@@ -22,13 +22,13 @@ if config.USE_GPU:
 logging.basicConfig(**config.__LOG_PARAMS__)
 logger = logging.getLogger(__name__)
 
-def train(model, train_loader, eval_loader):
+def train(model: nn.Module, train_loader: torch.utils.data.DataLoader, eval_loader: torch.utils.data.DataLoader) -> None:
 	"""
 	Train a PoseNet model given parameters in config
 	Arguments:
 		model (nn.Module) - PoseNet instance
-		train_loader (torch.data.DataLoader) - Dataloader for training data
-		eval_loader (torch.data.DataLoader) - Dataloader for validation data
+		train_loader (torch.utils.data.DataLoader) - Dataloader for training data
+		eval_loader (torch.utils.data.DataLoader) - Dataloader for validation data
 	"""
 	optimizer = getattr(optim, config.OPTIMIZER)(model.parameters(), lr=config.LEARNING_RATE, weight_decay=config.WEIGHT_DECAY)
 	overall_iter = 0
@@ -39,20 +39,22 @@ def train(model, train_loader, eval_loader):
 	for epoch in range(config.NUM_EPOCHS):
 		model.train()
 		for batch_idx, sample in enumerate(train_loader):
-			image, pose3d, heatmap2d = sample['image'], sample['pose3d'], sample['heatmap2d']
+			image, pose3d, pose2d, heatmap2d = sample['image'], sample['pose3d'], sample['pose2d'], sample['heatmap2d']
 			if config.USE_GPU:
-				image, pose3d, heatmap2d = to_cuda([image, pose3d, heatmap2d])
+				image, pose3d, pose2d, heatmap2d = to_cuda([image, pose3d, pose2d, heatmap2d])
 			optimizer.zero_grad()
 			output = model(image)
 
 			termwise_loss = {
 				'heatmap': JointLoss(output['hrnet_maps'], heatmap2d),
 				'cyclic_inward': F.mse_loss(output['cycl_martinez']['pose_3d'], pose3d),
+				'cyclic_outward': F.mse_loss(output['cycl_martinez']['pose_2d'], pose2d),
 				'bone_symm': BoneSymmLoss(output['cycl_martinez']['pose_3d'])
 			}
 
 			loss = config.posenet.LOSS_COEFF['hrnet_maps'] * termwise_loss['heatmap'] + \
 				config.posenet.LOSS_COEFF['cycl_martinez']['pose_3d'] * termwise_loss['cyclic_inward'] + \
+				config.posenet.LOSS_COEFF['cycl_martinez']['pose_2d'] * termwise_loss['cyclic_outward'] + \
 				config.posenet.LOSS_COEFF['bone_symm'] * termwise_loss['bone_symm']
 
 			loss.backward()
@@ -69,11 +71,11 @@ def train(model, train_loader, eval_loader):
 
 		evaluate(model, eval_loader, epoch)
 
-def evaluate(model, eval_loader, epoch, pretrained=False):
+def evaluate(model: nn.Module, eval_loader: torch.utils.data.DataLoader, epoch: int, pretrained: bool = False) -> None:
 	if pretrained:
 		model.load_state_dict(torch.load(os.path.join(config.LOG_PATH, config.NAME)))
 
-	logger.info("[+] Evaluating at end of epoch %s." % epoch)
+	logger.info(f"[+] Evaluating at end of epoch {epoch}.")
 	with torch.no_grad():
 		model.eval()
 		prediction = list()
@@ -86,16 +88,14 @@ def evaluate(model, eval_loader, epoch, pretrained=False):
 			prediction = np.append(prediction, p3d_out)
 
 	prediction = prediction.reshape(-1, 51)
-	generate_submission(prediction, "submission-%s-epoch-%s.csv.gz"%(config.NAME, epoch))
+	generate_submission(prediction, f"submission-{config.NAME}-epoch-{epoch}.csv.gz")
 
 def main():
-	normalize = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-
 	train_set = DataSet(config.DATA_PATH, mode="train")
 	train_loader = DataLoader(train_set, batch_size=config.BATCH_SIZE, shuffle=True)
 
 	eval_set = DataSet(config.DATA_PATH, mode="valid", heatmap2d=False)
-	eval_loader = DataLoader(eval_set, batch_size=config.BATCH_SIZE)
+	eval_loader = DataLoader(eval_set, batch_size=config.BATCH_SIZE, shuffle=False)
 
 	model = models.posenet.PoseNet(config.posenet)
 
@@ -103,7 +103,7 @@ def main():
 
 	train(model, train_loader, eval_loader)
 
-	create_zip_code_files("code-%s.zip"%(config.NAME))
+	create_zip_code_files(f"code-{config.NAME}.zip")
 
 if __name__ == '__main__':
 	try:

@@ -19,7 +19,7 @@ SAVE_ITER_FREQ = 2000
 OPTIMIZER = "Adam"
 
 # Experiment parameters
-USE_GPU, __LOG_TO_FILE__ = (True, True)
+USE_GPU, __LOG_TO_FILE__ = (False, False)
 NUM_JOINTS = 17
 BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"]).strip().decode("utf-8")
 NAME = "%s-%s-%s_%s" % (BRANCH, OPTIMIZER, BATCH_SIZE, NUM_JOINTS)
@@ -47,10 +47,12 @@ if __LOG_TO_FILE__:
 		'filename':LOG_NAME,
 		'filemode':'a',
 		'format':__logFormatter__,
-		'level':logging.DEBUG}
+		'level':logging.DEBUG,
+		'datefmt':'%d/%m/%Y %H:%M:%S'}
 else:
 	__LOG_PARAMS__ = {
 		'format':__logFormatter__,
 		'level':logging.DEBUG,
-		'stream':sys.stdout
+		'stream':sys.stdout,
+		'datefmt':'%d/%m/%Y %H:%M:%S'
 	}

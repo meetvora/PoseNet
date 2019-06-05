@@ -1,3 +1,5 @@
+"""Train the base HRNet using heatmaps from GT 2D coordinates"""
+
 import os
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
@@ -18,6 +20,7 @@ import config.hrnet
 import data
 from data import DataSet
 from utils import *
+from loss import *
 
 if config.finetune.USE_GPU:
 	torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -26,23 +29,17 @@ logFormatter = "%(asctime)s - [%(levelname)s] %(message)s"
 logging.basicConfig(filename=config.finetune.LOG_NAME, filemode='a', format=logFormatter, level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-def get_new_HR2D():
+def get_new_HR2D() -> nn.Module:
 	""" 
 	Returns an instance of HRNet with new final Conv2d layer
 	"""
 	model = models.hrnet.PoseHighResolutionNet(config.hrnet)
 	model.init_weights(config.finetune.BASE_WEIGHTS, config.finetune.USE_GPU)
-	final_layer = nn.Conv2d(32, 17, kernel_size=(1, 1), stride=(1, 1))
-	nn.init.normal_(final_layer.weight, std=0.001)
-	for name, _ in final_layer.named_parameters():
-		if name in ['bias']:
-			nn.init.constant_(final_layer.bias, 0)
-	model.final_layer = final_layer
 	for param in model.parameters():
 		param.requires_grad = True
 	return model
 
-def train(model, train_loader):
+def train(model: nn.Module, train_loader: DataLoader) -> None:
 	model.train()
 	optimizer = getattr(optim, config.finetune.OPTIMIZER)(model.parameters(), lr=config.finetune.LEARNING_RATE, weight_decay=config.finetune.WEIGHT_DECAY)
 	overall_iter = 0
