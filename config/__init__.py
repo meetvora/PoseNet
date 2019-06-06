@@ -11,7 +11,6 @@ NUM_EPOCHS = 5
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 WEIGHT_DECAY = 0
-__NOISE_STD = 1e-5  # Set to 0 to disable noising
 PRINT_BATCH_FREQ = 10
 LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
@@ -19,7 +18,9 @@ SAVE_ITER_FREQ = 2000
 OPTIMIZER = "Adam"
 
 # Experiment parameters
-USE_GPU, __LOG_TO_FILE__ = (False, False)
+__PRODUCTION__ = True
+
+USE_GPU = __PRODUCTION__
 NUM_JOINTS = 17
 BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref",
                                   "HEAD"]).strip().decode("utf-8")
@@ -36,21 +37,24 @@ __SUBMISSION_FILES__ = [
 if not os.path.isdir(LOG_PATH):
     os.mkdir(LOG_PATH)
 
+# Logging configuration
 LOG_NAME = os.path.join(
     LOG_PATH, f"{datetime.datetime.now().strftime('%d-%m--%H-%M')}.log")
+
 __logFormatter__ = "%(asctime)s - [%(levelname)s] %(message)s"
-if __LOG_TO_FILE__:
+
+if __PRODUCTION__:
     __LOG_PARAMS__ = {
         'filename': LOG_NAME,
         'filemode': 'a',
-        'format': __logFormatter__,
-        'level': logging.DEBUG,
-        'datefmt': '%d/%m/%Y %H:%M:%S'
     }
 else:
     __LOG_PARAMS__ = {
-        'format': __logFormatter__,
-        'level': logging.DEBUG,
         'stream': sys.stdout,
-        'datefmt': '%d/%m/%Y %H:%M:%S'
     }
+
+__LOG_PARAMS__.update({
+    'format': __logFormatter__,
+    'level': logging.DEBUG,
+    'datefmt': '%d/%m/%Y %H:%M:%S'
+})

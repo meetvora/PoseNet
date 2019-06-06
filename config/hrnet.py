@@ -3,7 +3,7 @@ TWOD = {
     'LINEAR_SIZE': 1024,
     'NUM_BLOCKS': 2,
     'p': 0.5,
-    'IN_SIZE': 16 * 2,
+    'IN_SIZE': 17 * 2,
     'OUT_SIZE': 17 * 3
 }
 THREED = {
@@ -11,7 +11,7 @@ THREED = {
     'NUM_BLOCKS': 2,
     'p': 0.5,
     'IN_SIZE': 17 * 3,
-    'OUT_SIZE': 16 * 2
+    'OUT_SIZE': 17 * 2
 }
 
 # HRNet Parameters
@@ -20,7 +20,7 @@ TARGET_TYPE = 'gaussian'
 INIT_WEIGHTS = True
 IMAGE_SIZE = [256, 256]
 HEATMAP_SIZE = [64, 64]
-NUM_JOINTS = 16
+NUM_JOINTS = 17
 SIGMA = 2
 EXTRA = {
     'PRETRAINED_LAYERS': [

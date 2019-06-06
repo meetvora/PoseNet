@@ -22,6 +22,7 @@ WEIGHT_DECAY = 0
 NOISE_STD = 1e-5  # Set to 0 to disable noising
 LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
+PRINT_BATCH_FREQ = 500
 BASE_WEIGHTS = "./log/finetune/FINETUNE-augmentation-Adam-3-02-21"
 
 BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref",

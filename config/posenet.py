@@ -11,7 +11,7 @@ LOSS_COEFF = {
     'hrnet_maps': 100,
     'cycl_martinez': {
         'pose_3d': 1,
-        'pose_2d': 0,
+        'pose_2d': 1e-3,
     },
     'bone_symm': 1e-3,
 }
