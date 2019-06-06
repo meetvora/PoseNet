@@ -1,6 +1,7 @@
 CPU   := 6
 Q     := 24
 SCRIPT:= main.py
+DIR   := master
 
 autoformat:
 	yapf -ir --style pep8 .
@@ -18,5 +19,7 @@ submit:
 status:
 	watch -n 5 bjobs
 
+stream:
+	tail -200f log/$(DIR)/`(ls -t log/$(DIR) | head -1)`
 %:
 	@:

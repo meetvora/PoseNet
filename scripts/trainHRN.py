@@ -16,7 +16,7 @@ import ipdb
 import models
 import models.hrnet
 import config.finetune
-import config.hrnet
+import config.posenet
 import data
 from data import DataSet
 from utils import *
@@ -37,7 +37,7 @@ def get_new_HR2D() -> nn.Module:
     """ 
 	Returns an instance of HRNet with new final Conv2d layer
 	"""
-    model = models.hrnet.PoseHighResolutionNet(config.hrnet)
+    model = models.hrnet.PoseHighResolutionNet(config.posenet)
     model.init_weights(config.finetune.BASE_WEIGHTS, config.finetune.USE_GPU)
     for param in model.parameters():
         param.requires_grad = True
@@ -65,7 +65,7 @@ def train(model: nn.Module, train_loader: DataLoader) -> None:
             loss.backward()
             optimizer.step()
 
-            if batch_idx % 500 == 0:
+            if batch_idx % config.finetune.PRINT_BATCH_FREQ == 0:
                 logger.debug(
                     f'Train Epoch: {epoch} [{batch_idx}]\tLoss: {loss.item():.6f}'
                 )

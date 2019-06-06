@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 def train(model: nn.Module, train_loader: torch.utils.data.DataLoader,
           eval_loader: torch.utils.data.DataLoader) -> None:
     """
-	Train a PoseNet model given parameters in config
-	Arguments:
-		model (nn.Module) - PoseNet instance
-		train_loader (torch.utils.data.DataLoader) - Dataloader for training data
-		eval_loader (torch.utils.data.DataLoader) - Dataloader for validation data
-	"""
+  	Train a PoseNet model given parameters in config
+  	Arguments:
+  		model (nn.Module) - PoseNet instance
+  		train_loader (torch.utils.data.DataLoader) - Dataloader for training data
+  		eval_loader (torch.utils.data.DataLoader) - Dataloader for validation data
+  	"""
     optimizer = getattr(optim,
                         config.OPTIMIZER)(model.parameters(),
                                           lr=config.LEARNING_RATE,
