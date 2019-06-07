@@ -8,10 +8,10 @@ END_TO_END, SOFTARGMAX = (True, True)
 
 # Term-wise loss coefficients
 LOSS_COEFF = {
-    'hrnet_maps': 100,
+    'hrnet_maps': 10,
     'cycl_martinez': {
         'pose_3d': 1,
-        'pose_2d': 1e-3,
+        'pose_2d': 1e-4,
     },
     'bone_symm': 1e-3,
 }
@@ -31,6 +31,7 @@ THREED = {
     'IN_SIZE': 17 * 3,
     'OUT_SIZE': NUM_JOINTS * 2
 }
+SKIP_CONNECTION = True
 
 # HRNet Parameters
 # Points to weights stored by pre-training HRN via scripts/trainHRN.py

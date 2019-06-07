@@ -18,6 +18,7 @@ class CyclicalMartinez(nn.Module):
 
     def __init__(self, cfg):
         super(CyclicalMartinez, self).__init__()
+        self.skip_connection = cfg.SKIP_CONNECTION
         self.inward = MartinezModel(cfg.TWOD['LINEAR_SIZE'], cfg.TWOD['NUM_BLOCKS'], cfg.TWOD['p'], \
          input_size=cfg.TWOD['IN_SIZE'], output_size=cfg.TWOD['OUT_SIZE'])
         self.outward = MartinezModel(cfg.THREED['LINEAR_SIZE'], cfg.THREED['NUM_BLOCKS'], cfg.THREED['p'], \
@@ -26,6 +27,8 @@ class CyclicalMartinez(nn.Module):
     def forward(self, x):
         y3d = self.inward(x)
         y2d = self.outward(y3d)
+        if self.skip_connection:
+            y2d += x
         return {'pose_3d': y3d, 'pose_2d': y2d}
 
 
