@@ -81,7 +81,7 @@ def train(model: nn.Module, train_loader: torch.utils.data.DataLoader,
                 logger.debug(print_termwise_loss(termwise_loss))
 
             overall_iter += 1
-            if overall_iter % config.SAVE_ITER_FREQ == 0:
+            if config.SAVE_ITER_FREQ and overall_iter % config.SAVE_ITER_FREQ == 0:
                 torch.save(
                     model.state_dict(),
                     os.path.join(config.LOG_PATH,

@@ -10,7 +10,7 @@ END_TO_END, SOFTARGMAX = (True, True)
 LOSS_COEFF = {
     'hrnet_maps': 10,
     'cycl_martinez': {
-        'pose_3d': 1,
+        'pose_3d': 10,
         'pose_2d': 1e-4,
     },
     'bone_symm': 1e-3,

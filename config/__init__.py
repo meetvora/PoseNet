@@ -7,13 +7,13 @@ import logging
 import sys
 
 # Hyper parameters
-NUM_EPOCHS = 5
+NUM_EPOCHS = 10
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 WEIGHT_DECAY = 0
 PRINT_BATCH_FREQ = 10
 LOG_ITER_FREQ = 10
-SAVE_ITER_FREQ = 2000
+SAVE_ITER_FREQ = None
 # Possible amongst ['ASGD', 'Adadelta', 'Adagrad', 'Adam', 'Adamax', 'LBFGS', 'RMSprop', 'Rprop', 'SGD', 'SparseAdam']
 OPTIMIZER = "Adam"
 

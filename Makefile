@@ -1,5 +1,5 @@
-CPU   := 6
-Q     := 24
+CPU   := 4
+Q     := 24:00
 SCRIPT:= main.py
 DIR   := master
 
