@@ -12,9 +12,9 @@ import models
 import models.posenet
 import config
 import config.posenet
-from data import DataSet
-from loss import *
-from utils import *
+from core.data import DataSet
+from core.loss import JointsMSELoss, BoneSymmMSELoss, MPJPE_
+from core.utils import *
 
 if config.USE_GPU:
     torch.set_default_tensor_type('torch.cuda.FloatTensor')
@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 def train(model: nn.Module, train_loader: torch.utils.data.DataLoader,
           eval_loader: torch.utils.data.DataLoader) -> None:
     """
-  	Train a PoseNet model given parameters in config
-  	Arguments:
-  		model (nn.Module) - PoseNet instance
-  		train_loader (torch.utils.data.DataLoader) - Dataloader for training data
-  		eval_loader (torch.utils.data.DataLoader) - Dataloader for validation data
-  	"""
+    Train a PoseNet model given parameters in config
+    Arguments:
+      model (nn.Module): PoseNet instance
+      train_loader (torch.utils.data.DataLoader): Dataloader for training data
+      eval_loader (torch.utils.data.DataLoader): Dataloader for validation data
+    """
     optimizer = getattr(optim,
                         config.OPTIMIZER)(model.parameters(),
                                           lr=config.LEARNING_RATE,
@@ -88,12 +88,21 @@ def train(model: nn.Module, train_loader: torch.utils.data.DataLoader,
                                  config.NAME + f"-iter={overall_iter}"))
 
         evaluate(model, eval_loader, epoch)
+    logger.info("[+] Finished training.")
 
 
 def evaluate(model: nn.Module,
              eval_loader: torch.utils.data.DataLoader,
              epoch: int,
              pretrained: bool = False) -> None:
+    """
+    Evaluate a PoseNet model
+    Arguments:
+      model (nn.Module): a trained PoseNet instance
+      eval_loader (torch.utils.data.DataLoader): Dataloader for validation data
+      epoch (int): current epoch count
+      pretrained (bool): flag to switch between a pretrained or an in-script trained model.
+    """
     if pretrained:
         model.load_state_dict(
             torch.load(os.path.join(config.LOG_PATH, config.NAME)))
@@ -132,9 +141,9 @@ def main():
 
     print_all_attr([config, config.posenet], logger)
 
-    train(model, train_loader, eval_loader)
-
-    create_zip_code_files(f"code-{config.NAME}.zip")
+    if not config.EVALUATE_ONLY:
+        train(model, train_loader, eval_loader)
+    evaluate(model, eval_loader, config.NUM_EPOCHS, config.EVALUATE_ONLY)
 
 
 if __name__ == '__main__':

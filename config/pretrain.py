@@ -11,10 +11,10 @@ GAUS_STD = 1
 OPTIMIZER = "Adam"
 
 # Path
-LOG_PATH = "./log/finetune/"
+LOG_PATH = "./log/pretrain/"
 DATA_PATH = "/cluster/project/infk/hilliges/lectures/mp19/project2/"
 
-NUM_EPOCHS = 3
+NUM_EPOCHS = 1
 BATCH_SIZE = 32
 WORKERS = 0
 LEARNING_RATE = 0.001
@@ -23,12 +23,11 @@ NOISE_STD = 1e-5  # Set to 0 to disable noising
 LOG_ITER_FREQ = 10
 SAVE_ITER_FREQ = 2000
 PRINT_BATCH_FREQ = 500
-BASE_WEIGHTS = "./log/finetune/FINETUNE-augmentation-Adam-3-02-21"
+BASE_WEIGHTS = None
 
 BRANCH = subprocess.check_output(["git", "rev-parse", "--abbrev-ref",
                                   "HEAD"]).strip().decode("utf-8")
-NAME = "%s-%s-%s-%s-%s" % ("FINETUNE", BRANCH, OPTIMIZER, NUM_EPOCHS,
-                           datetime.datetime.now().strftime('%d-%H'))
+NAME = "%s-%s-%s-%s" % ("PRETRAIN", BRANCH, OPTIMIZER, NUM_EPOCHS)
 
 if not os.path.isdir(LOG_PATH):
     os.mkdir(LOG_PATH)

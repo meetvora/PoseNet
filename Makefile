@@ -21,5 +21,6 @@ status:
 
 stream:
 	tail -200f log/$(DIR)/`(ls -t log/$(DIR) | head -1)`
+
 %:
 	@:

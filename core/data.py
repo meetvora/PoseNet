@@ -15,7 +15,7 @@ from PIL import Image
 from typing import List, Tuple
 
 from config import USE_GPU
-from config.finetune import GAUS_KERNEL, GAUS_STD
+from config.pretrain import GAUS_KERNEL, GAUS_STD
 
 
 class DataSet(Dataset):

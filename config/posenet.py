@@ -1,5 +1,7 @@
+import os
 import config
 import config.hrnet
+import config.pretrain
 
 USE_GPU = config.USE_GPU
 NUM_JOINTS = config.NUM_JOINTS
@@ -35,10 +37,11 @@ SKIP_CONNECTION = True
 
 # HRNet Parameters
 # Points to weights stored by pre-training HRN via scripts/trainHRN.py
-PRETRAINED = "/cluster/home/voram/mp/PoseNet/log/finetune/FINETUNE-augmentation-Adam-3-02-21"
+# PRETRAINED = "/cluster/home/voram/mp/PoseNet/log/finetune/FINETUNE-augmentation-Adam-3-02-21"
+PRETRAINED = os.path.join(config.pretrain.LOG_PATH, config.pretrain.NAME)
 INIT_WEIGHTS = True
 TARGET_TYPE = config.hrnet.TARGET_TYPE
-IMAGE_SIZE = config.hrnet.IMAGE_SIZE
+IMAGE0_SIZE = config.hrnet.IMAGE_SIZE
 HEATMAP_SIZE = config.hrnet.HEATMAP_SIZE
 SIGMA = config.hrnet.SIGMA
 EXTRA = config.hrnet.EXTRA

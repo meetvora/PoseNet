@@ -42,12 +42,13 @@ class Argmax(nn.Module):
         super(Argmax, self).__init__()
         self.get_coordinates = self._softargmax if SOFTARGMAX else self._hardargmax
 
-    def _hardargmax(self, maps: torch.Tensor) -> torch.Tensor:
+    def _hardargmax(self, maps: torch.Tensor, dim: int = 64) -> torch.Tensor:
         """
 		Converts 2D Heatmaps to coordinates.
 		(NOTE: Recheck the mapping function and rescaling heuristic.)
 		Arguments:
-		    maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joins, 64, 64)
+		    maps (torch.Tensor): 2D Heatmaps of shape (BATCH_SIZE, num_joins, dim, dim)
+                    dim (int): Spatial dimension of map. Default = 64.
 		Returns:
 		    z (torch.Tensor): Coordinates of shape (BATCH_SIZE, num_joints*2)
 		"""
@@ -90,7 +91,6 @@ class PoseNet(nn.Module):
 	The final supremo model that consists of two sub-models
 		twoDNet:
 			Pose HighResolution Net, proposed by Sun et al.
-			Frozen and uses publicly available pretrained weights.
 			Outputs: heatmap of shape (BATCH_SIZE, 16, 64, 64)
 		liftNet:
 			A 2D to 3D regressor and back to 2D.

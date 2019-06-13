@@ -21,9 +21,7 @@ def unnormalize_pose(p3d, p3d_mean, p3d_std):
 
 def generate_submission(predictions, out_path):
     ids = np.arange(1, predictions.shape[0] + 1).reshape([-1, 1])
-
     predictions = np.hstack([ids, predictions])
-
     joints = [
         'Hip', 'RHip', 'RKnee', 'RFoot', 'LHip', 'LKnee', 'LFoot', 'Spine',
         'Thorax', 'Neck/Nose', 'Head', 'LShoulder', 'LElbow', 'LWrist',
@@ -42,10 +40,6 @@ def generate_submission(predictions, out_path):
                delimiter=',',
                header=header,
                comments='')
-
-
-def create_zip_code_files(output_file):
-    patoolib.create_archive(output_file, config.SUBMISSION_FILES)
 
 
 def print_all_attr(modules, logger):

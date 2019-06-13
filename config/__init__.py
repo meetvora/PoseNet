@@ -7,7 +7,7 @@ import logging
 import sys
 
 # Hyper parameters
-NUM_EPOCHS = 10
+NUM_EPOCHS = 8
 BATCH_SIZE = 32
 LEARNING_RATE = 0.001
 WEIGHT_DECAY = 0
@@ -28,6 +28,8 @@ NAME = "%s-%s-%s_%s" % (BRANCH, OPTIMIZER, BATCH_SIZE, NUM_JOINTS)
 
 LOG_PATH = "./log/%s" % BRANCH
 DATA_PATH = "/cluster/project/infk/hilliges/lectures/mp19/project2/"
+
+EVALUATE_ONLY = False
 
 __SUBMISSION_FILES__ = [
     "data.py", "models", "utils.py", "main.py", "README.md",
