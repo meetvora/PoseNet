@@ -91,7 +91,7 @@ class PoseNet(nn.Module):
 	The final supremo model that consists of two sub-models
 		twoDNet:
 			Pose HighResolution Net, proposed by Sun et al.
-			Outputs: heatmap of shape (BATCH_SIZE, 16, 64, 64)
+			Outputs: heatmap of shape (BATCH_SIZE, NUM_JOINTS, 64, 64)
 		liftNet:
 			A 2D to 3D regressor and back to 2D.
 			Basic block inspired by Martinez et al.
